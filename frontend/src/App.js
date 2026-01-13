@@ -1550,7 +1550,9 @@ function App() {
   if (showCoachLogin) return <CoachLoginModal t={t} onLogin={() => { setCoachMode(true); setShowCoachLogin(false); }} onCancel={() => setShowCoachLogin(false)} />;
   if (coachMode) return <CoachDashboard t={t} lang={lang} onBack={() => setCoachMode(false)} onLogout={() => setCoachMode(false)} />;
 
+  // Filtrer les offres et cours invisibles pour le client
   const visibleOffers = offers.filter(o => o.visible !== false);
+  const visibleCourses = courses.filter(c => c.visible !== false);
   const totalPrice = calculateTotal();
 
   return (
