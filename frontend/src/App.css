@@ -91,6 +91,40 @@ html, body {
   }
 }
 
+/* FREE RESERVATION BUTTON - Green styling */
+.btn-free {
+  background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+  background-size: 200% 200%;
+  color: white;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  animation: greenPulse 2s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+.btn-free:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.8), 0 0 50px rgba(52, 211, 153, 0.5);
+}
+
+.btn-free:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  animation: none;
+}
+
+@keyframes greenPulse {
+  0%, 100% {
+    background-position: 0% 50%;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6), 0 0 40px rgba(52, 211, 153, 0.3);
+  }
+  50% {
+    background-position: 100% 50%;
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.8), 0 0 60px rgba(52, 211, 153, 0.5);
+  }
+}
+
 /* Session/Date Buttons */
 .session-btn {
   border: 1px solid rgba(217, 28, 210, 0.35);
