@@ -1413,39 +1413,6 @@ function App() {
 
     setTimeout(() => setShowConfirmPayment(true), 800);
   };
-      }
-      setLoading(true);
-      try {
-        const res = await axios.post(`${API}/reservations`, { ...reservation, totalPrice: 0 });
-        await axios.post(`${API}/discount-codes/${appliedDiscount.id}/use`);
-        setLastReservation({ ...res.data, totalPrice: "0.00" });
-        sendWhatsAppNotification(res.data, true);
-        setShowSuccess(true);
-        resetForm();
-      } catch (err) { console.error(err); }
-      setLoading(false);
-      return;
-    }
-
-    const hasPayment = paymentLinks.stripe?.trim() || paymentLinks.paypal?.trim() || paymentLinks.twint?.trim();
-    if (!hasPayment) {
-      setValidationMessage(t('noPaymentConfigured'));
-      setTimeout(() => setValidationMessage(""), 4000);
-      return;
-    }
-
-    setPendingReservation(reservation);
-    if (!isExistingUser) {
-      try { await axios.post(`${API}/users`, { name: userName, email: userEmail, whatsapp: userWhatsapp }); }
-      catch (err) { console.error("User creation error:", err); }
-    }
-
-    if (paymentLinks.twint?.trim()) window.open(paymentLinks.twint, '_blank');
-    else if (paymentLinks.stripe?.trim()) window.open(paymentLinks.stripe, '_blank');
-    else if (paymentLinks.paypal?.trim()) window.open(paymentLinks.paypal, '_blank');
-
-    setTimeout(() => setShowConfirmPayment(true), 800);
-  };
 
   const confirmPayment = async () => {
     if (!pendingReservation) return;
