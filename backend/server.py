@@ -156,11 +156,13 @@ class Concept(BaseModel):
     description: str = "Le concept Afroboost : cardio + danse afrobeat + casques audio immersifs. Un entraînement fun, énergétique et accessible à tous."
     heroImageUrl: str = ""
     heroVideoUrl: str = ""
+    logoUrl: str = ""
 
 class ConceptUpdate(BaseModel):
     description: Optional[str] = None
     heroImageUrl: Optional[str] = None
     heroVideoUrl: Optional[str] = None
+    logoUrl: Optional[str] = None
 
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="ignore")
