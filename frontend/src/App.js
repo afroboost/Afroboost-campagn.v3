@@ -1255,20 +1255,47 @@ function App() {
 
   useEffect(() => { const timer = setTimeout(() => setShowSplash(false), 1500); return () => clearTimeout(timer); }, []);
 
-  // Validate discount code in real-time
+  // Validate discount code in real-time with proper error messages
   useEffect(() => {
     const validateCode = async () => {
-      if (!discountCode || !selectedCourse) { setAppliedDiscount(null); return; }
-      const email = isExistingUser ? users.find(u => u.id === selectedUserId)?.email : userEmail;
+      // Reset if no code entered
+      if (!discountCode || discountCode.trim() === '') { 
+        setAppliedDiscount(null); 
+        setValidationMessage(""); 
+        return; 
+      }
+      
+      // Need to select a course first
+      if (!selectedCourse) { 
+        setAppliedDiscount(null);
+        setValidationMessage("⚠️ Veuillez d'abord sélectionner un cours");
+        return; 
+      }
+      
       try {
-        const res = await axios.post(`${API}/discount-codes/validate`, { code: discountCode, email: email || '', courseId: selectedCourse.id });
-        if (res.data.valid) { setAppliedDiscount(res.data.code); setValidationMessage(""); }
-        else { setAppliedDiscount(null); }
-      } catch { setAppliedDiscount(null); }
+        const res = await axios.post(`${API}/discount-codes/validate`, { 
+          code: discountCode.trim(), 
+          email: userEmail || '', 
+          courseId: selectedCourse.id 
+        });
+        
+        if (res.data.valid) { 
+          setAppliedDiscount(res.data.code); 
+          setValidationMessage(""); // Clear error on success
+        } else { 
+          setAppliedDiscount(null); 
+          // Display specific error message from backend
+          setValidationMessage(`❌ ${res.data.message || t('invalidPromoCode')}`);
+        }
+      } catch (err) { 
+        setAppliedDiscount(null); 
+        setValidationMessage(`❌ ${t('invalidPromoCode')}`);
+      }
     };
-    const debounce = setTimeout(validateCode, 300);
+    
+    const debounce = setTimeout(validateCode, 500);
     return () => clearTimeout(debounce);
-  }, [discountCode, selectedCourse, isExistingUser, selectedUserId, userEmail, users]);
+  }, [discountCode, selectedCourse, userEmail, t]);
 
   // Secret coach access: 3 rapid clicks
   const handleCopyrightClick = () => {
