@@ -1890,14 +1890,8 @@ const SuccessOverlay = ({ t, data, onClose }) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  // QR Code data - contains reservation ID for coach validation
-  const qrData = JSON.stringify({
-    id: data.id || data.reservationCode,
-    code: data.reservationCode,
-    name: data.userName,
-    email: data.userEmail,
-    type: 'afroboost_reservation'
-  });
+  // QR Code contains the validation URL for coach scanning
+  const validationUrl = `${window.location.origin}/validate/${data.reservationCode}`;
 
   return (
     <div className="success-overlay">
@@ -1906,10 +1900,10 @@ const SuccessOverlay = ({ t, data, onClose }) => {
         <div style={{ fontSize: '48px' }}>🎧</div>
         <p className="font-bold text-white my-2" style={{ fontSize: '20px' }}>{t('reservationConfirmed')}</p>
         
-        {/* QR Code for coach validation */}
+        {/* QR Code for coach validation - contains validation URL */}
         <div className="my-4 p-4 rounded-lg bg-white flex flex-col items-center">
           <QRCodeSVG 
-            value={qrData} 
+            value={validationUrl} 
             size={150} 
             level="H"
             includeMargin={true}
