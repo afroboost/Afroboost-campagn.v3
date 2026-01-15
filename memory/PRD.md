@@ -115,16 +115,39 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
    - "⏳ En attente" avec fond jaune
    - Affichés dans le tableau des réservations
 
-4. ✅ **Slider horizontal des offres**:
+4. ✅ **Slider horizontal des offres - SWIPE FLUIDE (corrigé)**:
+   - CSS optimisé avec `-webkit-overflow-scrolling: touch !important`
+   - `touch-action: pan-x` pour swipe mobile
+   - `scroll-snap-type: x mandatory` pour arrêt net sur chaque carte
+   - Suppression des styles inline conflictuels
    - Effet LED néon rose (#d91cd2) sur l'offre sélectionnée
    - Badge "✓ Sélectionné" visible
-   - Scroll horizontal avec scrollbar stylisée
 
-5. ✅ **Rich Preview (Open Graph)**:
+5. ✅ **Affichage images des offres (corrigé)**:
+   - Priorité: `offer.images[0] > offer.thumbnail > defaultImage`
+   - Points de navigation discrets pour cartes multi-images
+   - Carrousel avec navigation au clic sur les points
+   - Zoom modal avec flèches de navigation
+   - Synchronisation correcte après édition coach (`fetchData()` appelé au retour)
+
+6. ✅ **Cartes non tronquées (corrigé)**:
+   - `.offer-card.selected { height: auto !important; max-height: none !important; }`
+   - Conteneur flexible qui s'adapte au contenu
+
+7. ✅ **Rich Preview (Open Graph)**:
    - Meta tags og:title, og:description, og:image ajoutés
    - Image og-image.png générée (1.3MB)
    - Twitter Card meta tags ajoutés
    - Aperçu riche pour partage WhatsApp/Instagram
+
+### Architecture Vercel (15 Jan 2026)
+1. ✅ **Structure modulaire initiée**:
+   - `/frontend/src/config/index.js` - Configuration groupée
+   - `/frontend/src/config/constants.js` - Constantes exportées
+   - `/frontend/vercel.json` - Configuration routing Vercel
+   - `/frontend/ARCHITECTURE.md` - Documentation structure
+
+2. ⏳ **Prochaine étape**: Refactoriser App.js en composants séparés
 
 ---
 
