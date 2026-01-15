@@ -684,6 +684,224 @@ async def update_coach_auth(auth: CoachAuth):
     await db.coach_auth.update_one({"id": "coach_auth"}, {"$set": auth.model_dump()}, upsert=True)
     return {"success": True}
 
+# ==================== AI WHATSAPP AGENT ====================
+
+class AIConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = "ai_config"
+    enabled: bool = False
+    systemPrompt: str = """Tu es l'assistant virtuel d'Afroboost, une expérience fitness unique combinant cardio, danse afrobeat et casques audio immersifs.
+
+Ton rôle:
+- Répondre aux questions sur les cours, les offres et les réservations
+- Être chaleureux, dynamique et motivant comme un coach fitness
+- Utiliser un ton amical et des emojis appropriés
+- Personnaliser les réponses avec le prénom du client quand disponible
+
+Si tu ne connais pas la réponse, oriente vers le contact: contact.artboost@gmail.com"""
+    model: str = "gpt-4o-mini"
+    provider: str = "openai"
+    lastMediaUrl: str = ""
+
+class AIConfigUpdate(BaseModel):
+    enabled: Optional[bool] = None
+    systemPrompt: Optional[str] = None
+    model: Optional[str] = None
+    provider: Optional[str] = None
+    lastMediaUrl: Optional[str] = None
+
+class AILog(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    fromPhone: str
+    clientName: Optional[str] = None
+    incomingMessage: str
+    aiResponse: str
+    responseTime: float = 0  # En secondes
+
+class WhatsAppWebhook(BaseModel):
+    From: str  # whatsapp:+41XXXXXXXXX
+    Body: str
+    To: Optional[str] = None
+    MediaUrl0: Optional[str] = None
+
+# --- AI Config Routes ---
+@api_router.get("/ai-config")
+async def get_ai_config():
+    config = await db.ai_config.find_one({"id": "ai_config"}, {"_id": 0})
+    if not config:
+        default_config = AIConfig().model_dump()
+        await db.ai_config.insert_one(default_config)
+        return default_config
+    return config
+
+@api_router.put("/ai-config")
+async def update_ai_config(config: AIConfigUpdate):
+    updates = {k: v for k, v in config.model_dump().items() if v is not None}
+    await db.ai_config.update_one({"id": "ai_config"}, {"$set": updates}, upsert=True)
+    return await db.ai_config.find_one({"id": "ai_config"}, {"_id": 0})
+
+# --- AI Logs Routes ---
+@api_router.get("/ai-logs")
+async def get_ai_logs():
+    logs = await db.ai_logs.find({}, {"_id": 0}).sort("timestamp", -1).to_list(50)
+    return logs
+
+@api_router.delete("/ai-logs")
+async def clear_ai_logs():
+    await db.ai_logs.delete_many({})
+    return {"success": True}
+
+# --- WhatsApp Webhook (Twilio) ---
+@api_router.post("/webhook/whatsapp")
+async def handle_whatsapp_webhook(webhook: WhatsAppWebhook):
+    """
+    Webhook pour recevoir les messages WhatsApp entrants via Twilio
+    Répond automatiquement avec l'IA si activée
+    """
+    import time
+    start_time = time.time()
+    
+    # Récupérer la config IA
+    ai_config = await db.ai_config.find_one({"id": "ai_config"}, {"_id": 0})
+    if not ai_config or not ai_config.get("enabled"):
+        logger.info(f"AI disabled, ignoring message from {webhook.From}")
+        return {"status": "ai_disabled"}
+    
+    # Extraire le numéro de téléphone
+    from_phone = webhook.From.replace("whatsapp:", "")
+    incoming_message = webhook.Body
+    
+    logger.info(f"Incoming WhatsApp from {from_phone}: {incoming_message}")
+    
+    # Chercher le client dans les réservations
+    client_name = None
+    normalized_phone = from_phone.replace("+", "").replace(" ", "")
+    reservations = await db.reservations.find({}, {"_id": 0}).to_list(1000)
+    
+    for res in reservations:
+        res_phone = (res.get("whatsapp") or res.get("phone") or "").replace("+", "").replace(" ", "").replace("-", "")
+        if res_phone and normalized_phone.endswith(res_phone[-9:]):
+            client_name = res.get("userName") or res.get("name")
+            break
+    
+    # Construire le contexte
+    context = ""
+    if client_name:
+        context += f"\n\nLe client qui te parle s'appelle {client_name}. Utilise son prénom dans ta réponse."
+    
+    last_media = ai_config.get("lastMediaUrl", "")
+    if last_media:
+        context += f"\n\nNote: Tu as récemment envoyé un média à ce client: {last_media}. Tu peux lui demander s'il l'a bien reçu."
+    
+    full_system_prompt = ai_config.get("systemPrompt", "") + context
+    
+    # Appeler l'IA
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not emergent_key:
+            logger.error("EMERGENT_LLM_KEY not configured")
+            return {"status": "error", "message": "AI key not configured"}
+        
+        # Créer une session unique par numéro de téléphone
+        session_id = f"whatsapp_{normalized_phone}"
+        
+        chat = LlmChat(
+            api_key=emergent_key,
+            session_id=session_id,
+            system_message=full_system_prompt
+        ).with_model(ai_config.get("provider", "openai"), ai_config.get("model", "gpt-4o-mini"))
+        
+        user_message = UserMessage(text=incoming_message)
+        ai_response = await chat.send_message(user_message)
+        
+        response_time = time.time() - start_time
+        
+        # Sauvegarder le log
+        log_entry = AILog(
+            fromPhone=from_phone,
+            clientName=client_name,
+            incomingMessage=incoming_message,
+            aiResponse=ai_response,
+            responseTime=response_time
+        ).model_dump()
+        await db.ai_logs.insert_one(log_entry)
+        
+        logger.info(f"AI responded to {from_phone} in {response_time:.2f}s")
+        
+        # Retourner la réponse (Twilio attend un TwiML ou un JSON)
+        # Pour une réponse automatique, Twilio utilise TwiML
+        return {
+            "status": "success",
+            "response": ai_response,
+            "clientName": client_name,
+            "responseTime": response_time
+        }
+        
+    except Exception as e:
+        logger.error(f"AI error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+# --- Endpoint pour tester l'IA manuellement ---
+@api_router.post("/ai-test")
+async def test_ai_response(data: dict):
+    """Test l'IA avec un message manuel"""
+    import time
+    start_time = time.time()
+    
+    message = data.get("message", "")
+    client_name = data.get("clientName", "")
+    
+    if not message:
+        raise HTTPException(status_code=400, detail="Message requis")
+    
+    # Récupérer la config IA
+    ai_config = await db.ai_config.find_one({"id": "ai_config"}, {"_id": 0})
+    if not ai_config:
+        ai_config = AIConfig().model_dump()
+    
+    # Construire le contexte
+    context = ""
+    if client_name:
+        context += f"\n\nLe client qui te parle s'appelle {client_name}. Utilise son prénom dans ta réponse."
+    
+    last_media = ai_config.get("lastMediaUrl", "")
+    if last_media:
+        context += f"\n\nNote: Tu as récemment envoyé un média à ce client: {last_media}."
+    
+    full_system_prompt = ai_config.get("systemPrompt", "") + context
+    
+    try:
+        from emergentintegrations.llm.chat import LlmChat, UserMessage
+        
+        emergent_key = os.environ.get("EMERGENT_LLM_KEY")
+        if not emergent_key:
+            raise HTTPException(status_code=500, detail="EMERGENT_LLM_KEY non configuré")
+        
+        chat = LlmChat(
+            api_key=emergent_key,
+            session_id=f"test_{int(time.time())}",
+            system_message=full_system_prompt
+        ).with_model(ai_config.get("provider", "openai"), ai_config.get("model", "gpt-4o-mini"))
+        
+        user_message = UserMessage(text=message)
+        ai_response = await chat.send_message(user_message)
+        
+        response_time = time.time() - start_time
+        
+        return {
+            "success": True,
+            "response": ai_response,
+            "responseTime": response_time
+        }
+        
+    except Exception as e:
+        logger.error(f"AI test error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include router
 app.include_router(api_router)
 
