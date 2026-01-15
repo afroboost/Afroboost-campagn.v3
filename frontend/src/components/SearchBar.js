@@ -146,6 +146,7 @@ export const NavigationBar = ({
           </button>
         ))}
       </div>
+      )}
 
       {/* Barre de recherche avec bordure rose */}
       {showSearch && (
