@@ -4822,36 +4822,32 @@ function App() {
   const baseCourses = courses.filter(c => c.visible !== false);
   
   // Appliquer le filtre de catégorie
+  // OFFRES = abonnements + sessions cardio (tous les non-produits)
+  // SHOP = uniquement produits physiques
   let visibleOffers = baseOffers.filter(offer => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'sessions') return !offer.isProduct;
-    if (activeFilter === 'offers') return !offer.isProduct && (
-      offer.name?.toLowerCase().includes('carte') || 
-      offer.name?.toLowerCase().includes('abonnement') ||
-      offer.name?.toLowerCase().includes('pack')
-    );
-    if (activeFilter === 'shop') return offer.isProduct === true;
+    if (activeFilter === 'offers') return !offer.isProduct; // Tous les non-produits (abonnements + sessions)
+    if (activeFilter === 'shop') return offer.isProduct === true; // Uniquement produits physiques
     return true;
   });
   
-  // Appliquer le filtre de recherche textuelle
+  // Appliquer le filtre de recherche textuelle - TITRE UNIQUEMENT
   if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase().trim();
     visibleOffers = visibleOffers.filter(offer => 
-      (offer.name?.toLowerCase() || '').includes(query) ||
-      (offer.description?.toLowerCase() || '').includes(query)
+      (offer.name?.toLowerCase() || '').includes(query)
     );
   }
   
   // Filtrer les cours selon le filtre et la recherche
   let visibleCourses = baseCourses;
-  if (activeFilter === 'shop' || activeFilter === 'offers') {
-    visibleCourses = []; // Masquer les cours sur Shop et Offres
+  if (activeFilter === 'shop') {
+    visibleCourses = []; // Masquer les cours uniquement sur Shop
   } else if (searchQuery.trim()) {
     const query = searchQuery.toLowerCase().trim();
     visibleCourses = baseCourses.filter(course => 
-      (course.name?.toLowerCase() || '').includes(query) ||
-      (course.locationName?.toLowerCase() || '').includes(query)
+      (course.name?.toLowerCase() || '').includes(query)
     );
   }
   
