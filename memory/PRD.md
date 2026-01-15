@@ -319,6 +319,12 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - **Fix scroll mobile** : overflow-y: auto sur html/body, -webkit-overflow-scrolling: touch
   - **Smooth scroll** : Navigation automatique vers la section lors du clic sur un filtre
   - **Indicateur de scroll** : Flèche animée après 3s sans scroll pour guider les nouveaux utilisateurs
+- [x] **Vérification Médias & Optimisation Vidéo (15 Jan 2026)**:
+  - **Validation URL côté Admin** : Badge "✓ Valide" ou "✗ Format inconnu" à côté du champ média
+  - **Formats supportés** : YouTube, Vimeo, .mp4, .webm, .jpg, .jpeg, .png, .webp, .gif
+  - **Fallback placeholder** : Image Afroboost par défaut si média ne charge pas (onError)
+  - **Overlays réduits** : Bandes haut/bas réduites de 55/80px à 35/50px et plus transparentes (70% → 30%)
+  - **Lisibilité texte** : text-shadow ajouté au titre et description pour contraste sur vidéo
 
 ### P1 - À faire
 - [ ] Continuer refactoring: Extraire CoachDashboard, CoachLoginModal dans composants séparés
