@@ -651,6 +651,97 @@ const OfferCard = ({ offer, selected, onClick }) => {
   );
 };
 
+// Offer Card for Horizontal Slider - With LED effect and Info icon
+const OfferCardSlider = ({ offer, selected, onClick }) => {
+  const [showDescription, setShowDescription] = useState(false);
+  const defaultImage = "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=400&h=250&fit=crop";
+  
+  const toggleDescription = (e) => {
+    e.stopPropagation();
+    setShowDescription(!showDescription);
+  };
+  
+  return (
+    <div 
+      className="flex-shrink-0 snap-start"
+      style={{ width: '300px', minWidth: '300px' }}
+    >
+      <div 
+        onClick={onClick}
+        className={`offer-card-slider rounded-xl overflow-hidden cursor-pointer transition-all duration-300`}
+        style={{
+          boxShadow: selected 
+            ? '0 0 25px #d91cd2, 0 0 50px rgba(217, 28, 210, 0.6), inset 0 0 25px rgba(217, 28, 210, 0.15)' 
+            : '0 4px 20px rgba(0,0,0,0.4)',
+          border: selected ? '3px solid #d91cd2' : '1px solid rgba(255,255,255,0.15)',
+          transform: selected ? 'scale(1.03)' : 'scale(1)',
+          background: 'linear-gradient(180deg, rgba(20,10,30,0.98) 0%, rgba(5,0,15,0.99) 100%)'
+        }}
+        data-testid={`offer-card-${offer.id}`}
+      >
+        {/* Image Section - Larger height */}
+        <div style={{ position: 'relative', height: '180px' }}>
+          {!showDescription ? (
+            <>
+              <img 
+                src={offer.thumbnail || defaultImage} 
+                alt={offer.name} 
+                className="w-full h-full object-cover"
+                onError={(e) => { e.target.src = defaultImage; }}
+              />
+              {/* Info Icon "i" - Clickable */}
+              {offer.description && (
+                <div 
+                  className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center cursor-pointer transition-all hover:scale-110"
+                  style={{ 
+                    background: 'rgba(217, 28, 210, 0.9)',
+                    boxShadow: '0 0 10px rgba(217, 28, 210, 0.5)'
+                  }}
+                  onClick={toggleDescription}
+                  data-testid={`offer-info-${offer.id}`}
+                  title="Voir la description"
+                >
+                  <InfoIcon />
+                </div>
+              )}
+              {/* Selected indicator */}
+              {selected && (
+                <div className="absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-bold text-white"
+                  style={{ background: '#d91cd2', boxShadow: '0 0 10px #d91cd2' }}>
+                  ✓ Sélectionné
+                </div>
+              )}
+            </>
+          ) : (
+            /* Description Panel */
+            <div 
+              className="w-full h-full flex flex-col justify-center p-4"
+              style={{ background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.95) 0%, rgba(217, 28, 210, 0.9) 100%)' }}
+            >
+              <p className="text-white text-sm leading-relaxed">{offer.description}</p>
+              <button 
+                className="absolute top-3 right-3 w-8 h-8 rounded-full flex items-center justify-center bg-white/20 hover:bg-white/30 transition-all"
+                onClick={toggleDescription}
+                title="Fermer"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+          )}
+        </div>
+        
+        {/* Content Section */}
+        <div className="p-4">
+          <p className="font-semibold text-white mb-2" style={{ fontSize: '17px' }}>{offer.name}</p>
+          <span className="text-2xl font-bold" style={{ color: '#d91cd2', textShadow: selected ? '0 0 10px rgba(217, 28, 210, 0.5)' : 'none' }}>
+            CHF {offer.price}.-
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Coach Login Modal
 const CoachLoginModal = ({ t, onLogin, onCancel }) => {
   const [email, setEmail] = useState("");
