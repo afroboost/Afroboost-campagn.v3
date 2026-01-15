@@ -5351,97 +5351,113 @@ function App() {
           </div>
         )}
 
-        {/* Liens externes et paiements */}
-        <div className="mt-12 mb-6">
-          {/* Boutons de liens externes */}
-          {(concept.externalLink1Url || concept.externalLink2Url) && (
-            <div className="flex justify-center gap-4 mb-6 flex-wrap">
-              {concept.externalLink1Url && concept.externalLink1Title && (
+        {/* Footer minimaliste avec navigation textuelle et logos paiement */}
+        <footer className="mt-12 mb-8 text-center">
+          
+          {/* Logos de paiement - Sans rectangle, juste les logos */}
+          {(concept.paymentTwint || concept.paymentPaypal || concept.paymentCreditCard) && (
+            <div className="flex justify-center items-center gap-6 mb-6" data-testid="payment-logos-footer">
+              {concept.paymentTwint && (
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/8/83/Twint_Logo.svg" 
+                  alt="Twint" 
+                  style={{ height: '24px', filter: 'brightness(0) invert(1)', opacity: 0.7 }}
+                  title="Twint"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              )}
+              {concept.paymentPaypal && (
+                <img 
+                  src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" 
+                  alt="PayPal" 
+                  style={{ height: '22px', filter: 'brightness(0) invert(1)', opacity: 0.7 }}
+                  title="PayPal"
+                  onError={(e) => { e.target.style.display = 'none'; }}
+                />
+              )}
+              {concept.paymentCreditCard && (
+                <div className="flex items-center gap-2">
+                  <img 
+                    src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" 
+                    alt="Visa" 
+                    style={{ height: '18px', filter: 'brightness(0) invert(1)', opacity: 0.7 }}
+                    title="Visa"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                  <img 
+                    src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" 
+                    alt="Mastercard" 
+                    style={{ height: '20px', filter: 'brightness(0) invert(1)', opacity: 0.7 }}
+                    title="Mastercard"
+                    onError={(e) => { e.target.style.display = 'none'; }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* Navigation textuelle horizontale - Police fine, sans icônes */}
+          <div 
+            className="flex justify-center items-center flex-wrap gap-x-2 gap-y-1"
+            style={{ 
+              fontFamily: "'Inter', -apple-system, sans-serif",
+              fontWeight: 300,
+              fontSize: '12px',
+              letterSpacing: '0.5px'
+            }}
+          >
+            {concept.externalLink1Url && concept.externalLink1Title && (
+              <>
                 <a 
                   href={concept.externalLink1Url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-full text-sm font-semibold transition-all"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(217, 28, 210, 0.3), rgba(139, 92, 246, 0.3))',
-                    border: '1px solid rgba(217, 28, 210, 0.5)',
-                    color: '#fff',
-                    boxShadow: '0 0 15px rgba(217, 28, 210, 0.2)'
-                  }}
+                  className="text-white hover:text-pink-400 transition-colors"
+                  style={{ opacity: 0.6 }}
                   data-testid="external-link-1"
                 >
-                  🔗 {concept.externalLink1Title}
+                  {concept.externalLink1Title}
                 </a>
-              )}
-              {concept.externalLink2Url && concept.externalLink2Title && (
+                <span className="text-white" style={{ opacity: 0.3 }}>|</span>
+              </>
+            )}
+            {concept.externalLink2Url && concept.externalLink2Title && (
+              <>
                 <a 
                   href={concept.externalLink2Url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-full text-sm font-semibold transition-all"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(217, 28, 210, 0.3), rgba(139, 92, 246, 0.3))',
-                    border: '1px solid rgba(217, 28, 210, 0.5)',
-                    color: '#fff',
-                    boxShadow: '0 0 15px rgba(217, 28, 210, 0.2)'
-                  }}
+                  className="text-white hover:text-pink-400 transition-colors"
+                  style={{ opacity: 0.6 }}
                   data-testid="external-link-2"
                 >
-                  🔗 {concept.externalLink2Title}
+                  {concept.externalLink2Title}
                 </a>
-              )}
-            </div>
-          )}
-
-          {/* Rectangle pied de page avec icônes de paiement */}
-          {(concept.paymentTwint || concept.paymentPaypal || concept.paymentCreditCard) && (
-            <div 
-              className="mx-auto rounded-xl p-4 text-center"
-              style={{
-                maxWidth: '400px',
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid rgba(139, 92, 246, 0.3)'
-              }}
-              data-testid="payment-icons-footer"
+                <span className="text-white" style={{ opacity: 0.3 }}>|</span>
+              </>
+            )}
+            {(installPrompt || isIOS) && !window.matchMedia('(display-mode: standalone)').matches && (
+              <>
+                <button 
+                  onClick={handleInstallClick}
+                  className="text-white hover:text-pink-400 transition-colors"
+                  style={{ opacity: 0.6, background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 'inherit', fontSize: 'inherit', letterSpacing: 'inherit' }}
+                  data-testid="footer-install-link"
+                >
+                  Installer Afroboost
+                </button>
+                <span className="text-white" style={{ opacity: 0.3 }}>|</span>
+              </>
+            )}
+            <span 
+              onClick={handleCopyrightClick} 
+              className="copyright-secret text-white cursor-pointer" 
+              style={{ opacity: 0.4 }}
+              data-testid="copyright-secret"
             >
-              <p className="text-xs text-white mb-2" style={{ opacity: 0.6 }}>Paiements acceptés</p>
-              <div className="flex justify-center gap-4">
-                {concept.paymentTwint && (
-                  <div className="flex flex-col items-center" title="Twint">
-                    <span style={{ fontSize: '28px' }}>🔵</span>
-                    <span className="text-xs text-white mt-1" style={{ opacity: 0.7 }}>Twint</span>
-                  </div>
-                )}
-                {concept.paymentPaypal && (
-                  <div className="flex flex-col items-center" title="PayPal">
-                    <span style={{ fontSize: '28px' }}>🅿️</span>
-                    <span className="text-xs text-white mt-1" style={{ opacity: 0.7 }}>PayPal</span>
-                  </div>
-                )}
-                {concept.paymentCreditCard && (
-                  <div className="flex flex-col items-center" title="Carte de Crédit">
-                    <span style={{ fontSize: '28px' }}>💳</span>
-                    <span className="text-xs text-white mt-1" style={{ opacity: 0.7 }}>Carte</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <footer className="mt-6 mb-8 text-center" style={{ opacity: 0.3 }}>
-          {/* Install app link - always visible for users who dismissed banner */}
-          {(installPrompt || isIOS) && !window.matchMedia('(display-mode: standalone)').matches && (
-            <button 
-              onClick={handleInstallClick}
-              className="text-xs mb-2 block mx-auto hover:opacity-80"
-              style={{ color: '#d91cd2' }}
-              data-testid="footer-install-link"
-            >
-              📲 Installer Afroboost
-            </button>
-          )}
-          <span onClick={handleCopyrightClick} className="copyright-secret text-white text-xs" data-testid="copyright-secret">{t('copyright')}</span>
+              {t('copyright')}
+            </span>
+          </div>
         </footer>
         
         {/* Indicateur de scroll pour les nouveaux utilisateurs */}
