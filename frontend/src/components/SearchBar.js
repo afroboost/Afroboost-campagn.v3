@@ -121,7 +121,8 @@ export const NavigationBar = ({
               cursor: 'pointer',
               transition: 'all 0.3s ease',
               // Style épuré : pas d'arrière-plan, bordure uniquement si actif
-              background: 'transparent',
+              backgroundColor: 'transparent',
+              background: 'none',
               border: activeFilter === filter.id 
                 ? '1.5px solid #d91cd2' 
                 : '1.5px solid transparent',
@@ -129,7 +130,12 @@ export const NavigationBar = ({
               // Lueur néon subtile uniquement si actif
               boxShadow: activeFilter === filter.id 
                 ? '0 0 12px rgba(217, 28, 210, 0.4)' 
-                : 'none'
+                : 'none',
+              // Reset button styles
+              outline: 'none',
+              WebkitAppearance: 'none',
+              MozAppearance: 'none',
+              appearance: 'none'
             }}
           >
             <span style={{ fontSize: '16px' }}>{filter.icon}</span>
