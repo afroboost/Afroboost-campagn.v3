@@ -1777,6 +1777,19 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
   const [testEmailAddress, setTestEmailAddress] = useState('');
   const [testEmailStatus, setTestEmailStatus] = useState(null); // 'sending', 'success', 'error'
 
+  // === WHATSAPP API STATE ===
+  const [whatsAppConfig, setWhatsAppConfig] = useState(() => getWhatsAppConfig());
+  const [showWhatsAppConfig, setShowWhatsAppConfig] = useState(false);
+  const [whatsAppSendingProgress, setWhatsAppSendingProgress] = useState(null);
+  const [whatsAppSendingResults, setWhatsAppSendingResults] = useState(null);
+  const [testWhatsAppNumber, setTestWhatsAppNumber] = useState('');
+  const [testWhatsAppStatus, setTestWhatsAppStatus] = useState(null);
+
+  // === ENVOI GROUPÉ STATE ===
+  const [bulkSendingInProgress, setBulkSendingInProgress] = useState(false);
+  const [bulkSendingProgress, setBulkSendingProgress] = useState(null); // {channel, current, total, name}
+  const [bulkSendingResults, setBulkSendingResults] = useState(null); // {email: {sent, failed}, whatsapp: {sent, failed}}
+
   // Add schedule slot
   const addScheduleSlot = () => {
     const now = new Date();
