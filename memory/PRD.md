@@ -312,6 +312,13 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - Sélecteur "📍 Section d'atterrissage par défaut" dans Mode Coach > Concept & Visuel
   - Persistance MongoDB via champ defaultLandingSection dans modèle Concept
   - Scroll automatique vers la section configurée au chargement de l'app
+- [x] **Navigation Épurée & Flux Mobile (15 Jan 2026)**:
+  - **Design épuré** : Filtres sans fond, bordure néon rose uniquement sur l'élément sélectionné
+  - **Logique de filtrage corrigée** : "Offres" = abonnements + sessions, "Shop" = produits physiques uniquement
+  - **Recherche par titre** : Bordure rose, filtrage en temps réel par titre uniquement
+  - **Fix scroll mobile** : overflow-y: auto sur html/body, -webkit-overflow-scrolling: touch
+  - **Smooth scroll** : Navigation automatique vers la section lors du clic sur un filtre
+  - **Indicateur de scroll** : Flèche animée après 3s sans scroll pour guider les nouveaux utilisateurs
 
 ### P1 - À faire
 - [ ] Continuer refactoring: Extraire CoachDashboard, CoachLoginModal dans composants séparés
