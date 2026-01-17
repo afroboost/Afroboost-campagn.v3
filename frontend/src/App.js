@@ -1793,6 +1793,97 @@ const CoachLoginModal = ({ t, onLogin, onCancel }) => {
   );
 };
 
+// Event Poster Modal (Popup d'accueil)
+const EventPosterModal = ({ mediaUrl, onClose }) => {
+  const [mediaType, setMediaType] = useState('image');
+  
+  useEffect(() => {
+    if (!mediaUrl) return;
+    const url = mediaUrl.toLowerCase();
+    if (url.includes('youtube.com') || url.includes('youtu.be') || url.includes('vimeo.com')) {
+      setMediaType('video');
+    } else {
+      setMediaType('image');
+    }
+  }, [mediaUrl]);
+  
+  // Parse video URL
+  const getVideoEmbed = () => {
+    if (!mediaUrl) return null;
+    
+    if (mediaUrl.includes('youtu.be')) {
+      const id = mediaUrl.split('/').pop().split('?')[0];
+      return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
+    }
+    if (mediaUrl.includes('youtube.com')) {
+      const urlParams = new URLSearchParams(new URL(mediaUrl).search);
+      const id = urlParams.get('v');
+      return `https://www.youtube.com/embed/${id}?autoplay=1&mute=1`;
+    }
+    if (mediaUrl.includes('vimeo.com')) {
+      const id = mediaUrl.split('/').pop();
+      return `https://player.vimeo.com/video/${id}?autoplay=1&muted=1`;
+    }
+    return null;
+  };
+  
+  if (!mediaUrl) return null;
+  
+  return (
+    <div 
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0, 0, 0, 0.85)' }}
+      onClick={onClose}
+    >
+      <div 
+        className="relative max-w-2xl w-full rounded-xl overflow-hidden"
+        style={{ 
+          background: 'linear-gradient(180deg, #0a0a0f 0%, #1a0a1f 100%)',
+          border: '2px solid rgba(217, 28, 210, 0.5)',
+          boxShadow: '0 0 30px rgba(217, 28, 210, 0.3)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button 
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          style={{ 
+            background: 'rgba(0, 0, 0, 0.7)',
+            border: '1px solid rgba(255, 255, 255, 0.3)'
+          }}
+          data-testid="close-event-poster"
+        >
+          <span className="text-white text-2xl font-light">×</span>
+        </button>
+        
+        {/* Media Content */}
+        <div className="w-full">
+          {mediaType === 'video' ? (
+            <div className="aspect-video">
+              <iframe 
+                src={getVideoEmbed()}
+                className="w-full h-full"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title="Event poster"
+              />
+            </div>
+          ) : (
+            <img 
+              src={mediaUrl} 
+              alt="Événement Afroboost"
+              className="w-full h-auto max-h-[80vh] object-contain"
+              onError={(e) => { e.target.style.display = 'none'; }}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Success Overlay with Image Share Functionality
 const SuccessOverlay = ({ t, data, onClose }) => {
   const ticketRef = useRef(null);
