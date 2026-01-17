@@ -1911,6 +1911,13 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
   const addCode = async (e) => {
     e.preventDefault();
     if (!newCode.type || !newCode.value) return;
+    
+    // Si mode série activé, utiliser la fonction batch
+    if (isBatchMode && newCode.batchCount > 1) {
+      await addBatchCodes(e);
+      return;
+    }
+    
     const response = await axios.post(`${API}/discount-codes`, {
       code: newCode.code || `CODE-${Date.now().toString().slice(-4)}`,
       type: newCode.type, value: parseFloat(newCode.value),
@@ -1919,7 +1926,51 @@ const CoachDashboard = ({ t, lang, onBack, onLogout }) => {
       expiresAt: newCode.expiresAt || null
     });
     setDiscountCodes([...discountCodes, response.data]);
-    setNewCode({ code: "", type: "", value: "", assignedEmail: "", courses: [], maxUses: "", expiresAt: "" });
+    setNewCode({ code: "", type: "", value: "", assignedEmail: "", courses: [], maxUses: "", expiresAt: "", batchCount: 1, prefix: "" });
+  };
+
+  // Génération en série de codes promo
+  const addBatchCodes = async (e) => {
+    e.preventDefault();
+    if (!newCode.type || !newCode.value) return;
+    
+    const count = Math.min(Math.max(1, parseInt(newCode.batchCount) || 1), 20); // Entre 1 et 20
+    const prefix = newCode.prefix?.trim().toUpperCase() || "CODE";
+    
+    setBatchLoading(true);
+    const createdCodes = [];
+    
+    try {
+      for (let i = 1; i <= count; i++) {
+        const codeValue = `${prefix}-${i}`;
+        const response = await axios.post(`${API}/discount-codes`, {
+          code: codeValue,
+          type: newCode.type, 
+          value: parseFloat(newCode.value),
+          assignedEmail: newCode.assignedEmail || null,
+          courses: newCode.courses, 
+          maxUses: newCode.maxUses ? parseInt(newCode.maxUses) : null,
+          expiresAt: newCode.expiresAt || null
+        });
+        createdCodes.push(response.data);
+      }
+      
+      setDiscountCodes(prev => [...prev, ...createdCodes]);
+      setNewCode({ code: "", type: "", value: "", assignedEmail: "", courses: [], maxUses: "", expiresAt: "", batchCount: 1, prefix: "" });
+      setIsBatchMode(false);
+      alert(`✅ ${count} ${t('batchSuccess')}`);
+    } catch (error) {
+      console.error("Erreur génération en série:", error);
+      // Ajouter les codes déjà créés même si erreur partielle
+      if (createdCodes.length > 0) {
+        setDiscountCodes(prev => [...prev, ...createdCodes]);
+        alert(`⚠️ ${createdCodes.length}/${count} codes créés. Erreur partielle.`);
+      } else {
+        alert("❌ Erreur lors de la création des codes.");
+      }
+    } finally {
+      setBatchLoading(false);
+    }
   };
 
   const toggleCode = async (code) => {
