@@ -380,6 +380,35 @@ html, body {
 /* Success Animation */
 .success-message {
   animation: slideIn 0.5s ease-out;
+  width: 100%;
+  max-width: 450px;
+  margin: 0 auto;
+}
+
+/* Success Overlay - Responsive */
+.success-overlay .ticket-capture-zone {
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .success-message {
+    max-width: 450px;
+  }
+  .success-overlay .ticket-capture-zone {
+    max-width: 380px;
+  }
+}
+
+@media (max-width: 480px) {
+  .success-message {
+    max-width: 100%;
+    padding: 16px !important;
+  }
+  .success-overlay .ticket-capture-zone {
+    padding: 12px !important;
+  }
 }
 
 @keyframes slideIn {
