@@ -417,10 +417,20 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - [x] **Fix WEEKDAYS_MAP (17 Jan 2026)**:
   - **Erreur corrigée** : `ReferenceError: WEEKDAYS_MAP is not defined` dans CoachDashboard.js
   - **Solution** : Ajout de la constante `WEEKDAYS_MAP` directement dans le fichier CoachDashboard.js
+- [x] **Recherche Floue / Fuzzy Search (17 Jan 2026)**:
+  - **Normalisation accents** : "seance" trouve "séance", "cafe" trouve "café"
+  - **Synonymes intégrés** : session↔séance, abonnement↔abo↔forfait, cardio↔fitness
+  - **Champ mots-clés** : Nouveau champ invisible dans les offres pour améliorer la recherche
+  - **Recherche étendue** : Titre + description + mots-clés
+- [x] **UI Cours avec Scroll et Suppression (17 Jan 2026)**:
+  - **Scroll** : maxHeight 400px avec overflow-y auto et scrollbar personnalisée
+  - **Bouton supprimer** : Icône poubelle rouge pour chaque cours avec confirmation
+  - **Amélioration UX** : Interface plus propre avec padding ajusté
 
 ### P1 - À faire
 - [x] ~~**CRITICAL: Refactoring de App.js**~~ - ✅ COMPLÉTÉ - App.js réduit de 52%
 - [x] ~~**Notifications email après réservation**~~ - ✅ COMPLÉTÉ
+- [x] ~~**Recherche floue**~~ - ✅ COMPLÉTÉ
 - [ ] **Optimisation Backend MongoDB** - Appliquer pagination et projection sur les requêtes pour améliorer les performances en production.
 - [ ] Continuer refactoring: Extraire CoachLoginModal dans composant séparé
 - [ ] Tests automatisés pour les composants extraits
