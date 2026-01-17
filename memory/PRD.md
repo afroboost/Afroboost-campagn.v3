@@ -364,6 +364,12 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - **Scroll automatique vers formulaire** : Après clic sur une offre, scroll fluide vers "Vos informations"
   - **Badge "✓ Sélectionné"** : Visible sur l'offre choisie avec effet glow rose
   - **Composant OffersSliderAutoPlay** : Nouveau composant dans App.js (lignes 946-1081)
+- [x] **Amélioration Partage WhatsApp avec QR Code (17 Jan 2026)**:
+  - **html2canvas** : Bibliothèque installée pour convertir le ticket en image PNG
+  - **Bouton "Enregistrer mon ticket"** : Télécharge le ticket complet (QR + infos) en image haute qualité
+  - **Bouton "Partager avec QR"** : Utilise Web Share API si disponible, sinon fallback texte + téléchargement
+  - **Zone de capture** : Le ticket entier (QR, code, infos, branding) est capturé pour l'image
+  - **Traductions i18n** : FR/EN/DE ajoutées (saveTicket, shareWithImage, generatingImage)
 
 ### P1 - À faire
 - [ ] **CRITICAL: Refactoring de App.js** - Le fichier monolithique dépasse 5500 lignes. Extraire la logique restante dans des hooks et composants dédiés.
