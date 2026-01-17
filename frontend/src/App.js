@@ -2764,6 +2764,53 @@ function App() {
   const baseOffers = offers.filter(o => o.visible !== false);
   const baseCourses = courses.filter(c => c.visible !== false);
   
+  // Fonction de recherche floue (fuzzy search)
+  const fuzzyMatch = (text, query) => {
+    if (!text || !query) return false;
+    const normalizedText = text.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // Supprime les accents
+      .replace(/[^a-z0-9\s]/g, ""); // Garde uniquement lettres et chiffres
+    const normalizedQuery = query.toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s]/g, "");
+    
+    // Correspondance exacte
+    if (normalizedText.includes(normalizedQuery)) return true;
+    
+    // Correspondance partielle (chaque mot de la requête)
+    const queryWords = normalizedQuery.split(/\s+/).filter(w => w.length > 1);
+    return queryWords.every(word => normalizedText.includes(word));
+  };
+  
+  // Synonymes courants pour la recherche
+  const synonyms = {
+    'session': ['séance', 'cours', 'class'],
+    'seance': ['session', 'cours', 'class'],
+    'abonnement': ['abo', 'forfait', 'pack'],
+    'abo': ['abonnement', 'forfait', 'pack'],
+    'cardio': ['fitness', 'sport', 'entrainement'],
+    'afrobeat': ['afro', 'danse', 'dance'],
+    'produit': ['article', 'shop', 'boutique'],
+    'tshirt': ['t-shirt', 'tee', 'haut'],
+    't-shirt': ['tshirt', 'tee', 'haut']
+  };
+  
+  // Recherche avec synonymes
+  const searchWithSynonyms = (text, query) => {
+    if (fuzzyMatch(text, query)) return true;
+    
+    // Chercher avec les synonymes
+    const queryNorm = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    for (const [key, values] of Object.entries(synonyms)) {
+      if (queryNorm.includes(key)) {
+        for (const syn of values) {
+          if (fuzzyMatch(text, query.replace(new RegExp(key, 'gi'), syn))) return true;
+        }
+      }
+    }
+    return false;
+  };
+  
   // Appliquer le filtre de catégorie
   // OFFRES = abonnements + sessions cardio (tous les non-produits)
   // SHOP = uniquement produits physiques
@@ -2775,12 +2822,18 @@ function App() {
     return true;
   });
   
-  // Appliquer le filtre de recherche textuelle - TITRE UNIQUEMENT
+  // Appliquer le filtre de recherche textuelle avec FUZZY SEARCH
   if (searchQuery.trim()) {
-    const query = searchQuery.toLowerCase().trim();
-    visibleOffers = visibleOffers.filter(offer => 
-      (offer.name?.toLowerCase() || '').includes(query)
-    );
+    const query = searchQuery.trim();
+    visibleOffers = visibleOffers.filter(offer => {
+      // Recherche dans le nom
+      if (searchWithSynonyms(offer.name || '', query)) return true;
+      // Recherche dans la description
+      if (searchWithSynonyms(offer.description || '', query)) return true;
+      // Recherche dans les mots-clés (champ invisible pour SEO)
+      if (searchWithSynonyms(offer.keywords || '', query)) return true;
+      return false;
+    });
   }
   
   // Filtrer les cours selon le filtre et la recherche
@@ -2788,9 +2841,10 @@ function App() {
   if (activeFilter === 'shop') {
     visibleCourses = []; // Masquer les cours uniquement sur Shop
   } else if (searchQuery.trim()) {
-    const query = searchQuery.toLowerCase().trim();
+    const query = searchQuery.trim();
     visibleCourses = baseCourses.filter(course => 
-      (course.name?.toLowerCase() || '').includes(query)
+      searchWithSynonyms(course.name || '', query) ||
+      searchWithSynonyms(course.locationName || '', query)
     );
   }
   
