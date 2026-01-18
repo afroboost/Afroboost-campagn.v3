@@ -2525,7 +2525,11 @@ function App() {
 
   const calculateTotal = () => {
     if (!selectedOffer) return 0;
-    let total = selectedOffer.price * quantity; // Multiplier par la quantité
+    // Pour les produits physiques: utiliser quantity
+    // Pour les services/cours: utiliser le nombre de dates sélectionnées
+    const isPhysicalProduct = selectedOffer?.isProduct || selectedOffer?.isPhysicalProduct;
+    const multiplier = isPhysicalProduct ? quantity : Math.max(1, selectedDates.length);
+    let total = selectedOffer.price * multiplier;
     if (appliedDiscount) {
       if (appliedDiscount.type === "100%" || (appliedDiscount.type === "%" && parseFloat(appliedDiscount.value) >= 100)) total = 0;
       else if (appliedDiscount.type === "%") total = total * (1 - parseFloat(appliedDiscount.value) / 100);
@@ -2682,8 +2686,7 @@ function App() {
     }
     
     // Nombre de dates sélectionnées (pour le calcul du prix)
-    const dateCount = selectedDates.length || 1;;
-    }
+    const dateCount = selectedDates.length || 1;
 
     const totalPrice = parseFloat(calculateTotal());
     
@@ -2805,11 +2808,20 @@ function App() {
     return (
       <div className="grid grid-cols-2 gap-2 mt-3">
         {dates.map((date, idx) => {
-          const sessionId = `${course.id}-${date.getTime()}`;
-          const isSelected = selectedSession === sessionId;
+          const dateISO = date.toISOString();
+          const isSelected = selectedCourse?.id === course.id && selectedDates.includes(dateISO);
           return (
             <button key={idx} type="button"
-              onClick={() => { setSelectedCourse(course); setSelectedDate(date); setSelectedSession(sessionId); }}
+              onClick={() => { 
+                // Sélectionner le cours si différent
+                if (selectedCourse?.id !== course.id) {
+                  setSelectedCourse(course);
+                  setSelectedDates([dateISO]); // Reset et ajouter la première date
+                } else {
+                  // Toggle la date (ajouter/retirer)
+                  toggleDateSelection(dateISO);
+                }
+              }}
               className={`session-btn px-3 py-2 rounded-lg text-sm font-medium ${isSelected ? 'selected' : ''}`}
               style={{ color: 'white' }} data-testid={`date-btn-${course.id}-${idx}`}>
               {formatDate(date, course.time, lang)} {isSelected && '✔'}
@@ -3068,9 +3080,9 @@ function App() {
         )}
 
         {/* =====================================================
-            SECTION OFFRES/SERVICES - Affichée si cours + date sélectionnés
+            SECTION OFFRES/SERVICES - Affichée si cours + dates sélectionnées
             ===================================================== */}
-        {selectedCourse && selectedDate && filteredServices.length > 0 && (
+        {selectedCourse && selectedDates.length > 0 && filteredServices.length > 0 && (
           <div id="offers-section" className="mb-8">
             <h2 className="font-semibold mb-2 text-white" style={{ fontSize: '18px' }}>{t('chooseOffer')}</h2>
             
@@ -3105,9 +3117,9 @@ function App() {
               offers={filteredProducts}
               selectedOffer={selectedOffer}
               onSelectOffer={(product) => {
-                // Pour les produits, pas besoin de cours/date
+                // Pour les produits, pas besoin de cours/dates
                 setSelectedCourse(null);
-                setSelectedDate(null);
+                setSelectedDates([]);
                 handleSelectOffer(product);
               }}
             />
