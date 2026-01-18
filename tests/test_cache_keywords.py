@@ -127,8 +127,12 @@ class TestCacheAndKeywords:
         created = response.json()
         offer_id = created.get("id")
         
-        # Update keywords
-        update_data = {"keywords": "updated, new, keywords, search"}
+        # Update keywords (include required fields)
+        update_data = {
+            "name": "TEST_Update_Keywords_Offer",
+            "price": 30,
+            "keywords": "updated, new, keywords, search"
+        }
         response = self.session.put(f"{self.api}/offers/{offer_id}", json=update_data)
         assert response.status_code == 200
         
