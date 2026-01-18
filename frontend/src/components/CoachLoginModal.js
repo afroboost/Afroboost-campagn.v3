@@ -1,223 +1,192 @@
 /**
- * CoachLoginModal Component
- * Handles coach authentication with login and password recovery
- * Extracted from App.js for better code organization and performance
+ * CoachLoginModal Component - Google OAuth Authentication
+ * 
+ * Authentification Google exclusive pour le Coach/Super Admin
+ * Seul l'email autorisé (coach@afroboost.com) peut accéder au dashboard
+ * 
+ * REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
  */
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
+// Icône Google officielle
+const GoogleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+    <g fill="none" fillRule="evenodd">
+      <path d="M17.64 9.205c0-.639-.057-1.252-.164-1.841H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+      <path d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/>
+      <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
+      <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+    </g>
+  </svg>
+);
+
 const CoachLoginModal = ({ t, onLogin, onCancel }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  
-  // Flux "Mot de passe oublié"
-  const [forgotMode, setForgotMode] = useState(false); // Étape 1: Saisir email
-  const [resetMode, setResetMode] = useState(false);   // Étape 2: Nouveau mot de passe
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const hasProcessedRef = useRef(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await axios.post(`${API}/coach-auth/login`, { email, password });
-      if (response.data.success) onLogin();
-      else setError(t('wrongCredentials'));
-    } catch { setError(t('wrongCredentials')); }
-  };
+  // Vérifier si déjà authentifié au chargement
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        const response = await axios.get(`${API}/auth/me`, {
+          withCredentials: true
+        });
+        if (response.data && response.data.email) {
+          console.log('✅ Déjà connecté:', response.data.email);
+          onLogin(response.data);
+        }
+      } catch (err) {
+        console.log('🔒 Non connecté, affichage du formulaire');
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+    checkExistingAuth();
+  }, [onLogin]);
 
-  // Étape 1: Vérifier l'email du coach
-  const handleForgotSubmit = (e) => {
-    e.preventDefault();
+  // Traiter le session_id dans l'URL (callback OAuth)
+  useEffect(() => {
+    const processOAuthCallback = async () => {
+      // Éviter le double traitement (StrictMode)
+      if (hasProcessedRef.current) return;
+      
+      const hash = window.location.hash;
+      if (!hash.includes('session_id=')) return;
+      
+      hasProcessedRef.current = true;
+      setIsLoading(true);
+      setError("");
+      
+      const sessionId = hash.split('session_id=')[1]?.split('&')[0];
+      if (!sessionId) {
+        setError("Session invalide");
+        setIsLoading(false);
+        return;
+      }
+      
+      // Nettoyer l'URL immédiatement
+      window.history.replaceState(null, '', window.location.pathname);
+      
+      try {
+        const response = await axios.post(`${API}/auth/google/session`, 
+          { session_id: sessionId },
+          { withCredentials: true }
+        );
+        
+        if (response.data.success) {
+          console.log('✅ Authentification Google réussie:', response.data.user.email);
+          onLogin(response.data.user);
+        } else {
+          // Accès refusé (email non autorisé)
+          setError(response.data.message || "Accès refusé");
+        }
+      } catch (err) {
+        console.error('❌ Erreur OAuth:', err);
+        setError(err.response?.data?.message || "Erreur d'authentification");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    processOAuthCallback();
+  }, [onLogin]);
+
+  // Lancer l'authentification Google
+  const handleGoogleLogin = () => {
+    setIsLoading(true);
     setError("");
     
-    // Récupérer coachAuth depuis localStorage
-    const storedAuth = localStorage.getItem('coachAuth');
-    if (storedAuth) {
-      try {
-        const coachAuth = JSON.parse(storedAuth);
-        if (coachAuth.email && coachAuth.email.toLowerCase() === forgotEmail.toLowerCase().trim()) {
-          // Email correspond - passer à l'étape 2
-          setForgotMode(false);
-          setResetMode(true);
-          setError("");
-        } else {
-          setError("Cet e-mail ne correspond pas au compte Coach enregistré.");
-        }
-      } catch {
-        setError("Erreur de vérification. Veuillez réessayer.");
-      }
-    } else {
-      // Vérifier aussi l'email par défaut
-      if (forgotEmail.toLowerCase().trim() === "coach@afroboost.com") {
-        setForgotMode(false);
-        setResetMode(true);
-        setError("");
-      } else {
-        setError("Cet e-mail ne correspond pas au compte Coach enregistré.");
-      }
-    }
+    // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
+    const redirectUrl = window.location.origin + window.location.pathname;
+    window.location.href = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(redirectUrl)}`;
   };
 
-  // Étape 2: Définir le nouveau mot de passe
-  const handleResetSubmit = (e) => {
-    e.preventDefault();
-    setError("");
-
-    // Validation
-    if (newPassword.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères.");
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
-      return;
-    }
-
-    // Mettre à jour coachAuth dans localStorage
-    const newCoachAuth = {
-      email: forgotEmail.toLowerCase().trim(),
-      password: newPassword
-    };
-    localStorage.setItem('coachAuth', JSON.stringify(newCoachAuth));
-
-    // Succès
-    setResetMode(false);
-    setSuccessMessage("✅ Mot de passe mis à jour avec succès ! Vous pouvez maintenant vous connecter.");
-    setNewPassword("");
-    setConfirmPassword("");
-    setForgotEmail("");
-  };
-
-  // Retour au login
-  const backToLogin = () => {
-    setForgotMode(false);
-    setResetMode(false);
-    setError("");
-    setSuccessMessage("");
-    setForgotEmail("");
-    setNewPassword("");
-    setConfirmPassword("");
-  };
+  // Affichage pendant la vérification
+  if (isCheckingAuth) {
+    return (
+      <div className="modal-overlay">
+        <div className="modal-content glass rounded-xl p-8 max-w-md w-full neon-border">
+          <div className="text-center">
+            <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-white text-sm">Vérification de la session...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="modal-overlay">
       <div className="modal-content glass rounded-xl p-8 max-w-md w-full neon-border">
         
-        {/* MESSAGE DE SUCCÈS */}
-        {successMessage && (
-          <div className="mb-6 p-4 rounded-lg text-center" style={{ background: 'rgba(34, 197, 94, 0.2)', border: '1px solid #22c55e' }}>
-            <p className="text-green-400 font-semibold">{successMessage}</p>
+        {/* Header */}
+        <div className="text-center mb-6">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 mx-auto mb-4 flex items-center justify-center">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          </div>
+          <h2 className="font-bold text-white text-xl mb-2">{t('coachLogin') || 'Espace Coach'}</h2>
+          <p className="text-white/60 text-sm">Connectez-vous avec votre compte Google autorisé</p>
+        </div>
+
+        {/* Message d'erreur */}
+        {error && (
+          <div 
+            className="mb-6 p-4 rounded-lg text-center"
+            style={{ 
+              background: 'rgba(239, 68, 68, 0.2)', 
+              border: '1px solid rgba(239, 68, 68, 0.5)' 
+            }}
+          >
+            <p className="text-red-400 text-sm">{error}</p>
           </div>
         )}
 
-        {/* ÉTAPE 1: SAISIR EMAIL POUR RÉCUPÉRATION */}
-        {forgotMode && !resetMode && (
-          <form onSubmit={handleForgotSubmit}>
-            <h2 className="font-bold mb-2 text-center text-white" style={{ fontSize: '24px' }}>🔐 Récupération</h2>
-            <p className="text-center text-white/60 text-sm mb-6">Entrez l'adresse e-mail du compte Coach</p>
-            
-            {error && <div className="mb-4 p-3 rounded-lg text-center" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>{error}</div>}
-            
-            <div className="mb-6">
-              <label className="block mb-2 text-white text-sm">E-mail du Coach</label>
-              <input 
-                type="email" 
-                required 
-                value={forgotEmail} 
-                onChange={(e) => setForgotEmail(e.target.value)} 
-                className="w-full px-4 py-3 rounded-lg neon-input" 
-                placeholder="coach@afroboost.com"
-                autoFocus
-              />
-            </div>
-            
-            <button type="submit" className="btn-primary w-full py-3 rounded-lg font-bold mb-3">
-              Vérifier l'e-mail
-            </button>
-            <button type="button" onClick={backToLogin} className="w-full py-2 rounded-lg glass text-white">
-              ← Retour à la connexion
-            </button>
-          </form>
-        )}
+        {/* Bouton Google */}
+        <button
+          onClick={handleGoogleLogin}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center gap-3 py-3 px-4 rounded-lg font-medium transition-all duration-200"
+          style={{
+            background: '#ffffff',
+            color: '#1f1f1f',
+            border: 'none',
+            cursor: isLoading ? 'wait' : 'pointer',
+            opacity: isLoading ? 0.7 : 1
+          }}
+          data-testid="google-login-btn"
+        >
+          {isLoading ? (
+            <div className="animate-spin w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full"></div>
+          ) : (
+            <GoogleIcon />
+          )}
+          <span>{isLoading ? 'Connexion en cours...' : 'Se connecter avec Google'}</span>
+        </button>
 
-        {/* ÉTAPE 2: NOUVEAU MOT DE PASSE */}
-        {resetMode && !forgotMode && (
-          <form onSubmit={handleResetSubmit}>
-            <h2 className="font-bold mb-2 text-center text-white" style={{ fontSize: '24px' }}>🔑 Nouveau mot de passe</h2>
-            <p className="text-center text-white/60 text-sm mb-6">Créez votre nouveau mot de passe sécurisé</p>
-            
-            {error && <div className="mb-4 p-3 rounded-lg text-center" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>{error}</div>}
-            
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block mb-2 text-white text-sm">Nouveau mot de passe</label>
-                <input 
-                  type="password" 
-                  required 
-                  value={newPassword} 
-                  onChange={(e) => setNewPassword(e.target.value)} 
-                  className="w-full px-4 py-3 rounded-lg neon-input" 
-                  placeholder="••••••••"
-                  minLength={6}
-                  autoFocus
-                />
-                <p className="text-xs text-white/40 mt-1">Minimum 6 caractères</p>
-              </div>
-              <div>
-                <label className="block mb-2 text-white text-sm">Confirmer le mot de passe</label>
-                <input 
-                  type="password" 
-                  required 
-                  value={confirmPassword} 
-                  onChange={(e) => setConfirmPassword(e.target.value)} 
-                  className="w-full px-4 py-3 rounded-lg neon-input" 
-                  placeholder="••••••••"
-                  minLength={6}
-                />
-              </div>
-            </div>
-            
-            <button type="submit" className="btn-primary w-full py-3 rounded-lg font-bold mb-3">
-              ✓ Enregistrer le nouveau mot de passe
-            </button>
-            <button type="button" onClick={backToLogin} className="w-full py-2 rounded-lg glass text-white">
-              ← Annuler
-            </button>
-          </form>
-        )}
+        {/* Info sécurité */}
+        <div className="mt-6 p-3 rounded-lg" style={{ background: 'rgba(139, 92, 246, 0.1)' }}>
+          <p className="text-white/50 text-xs text-center">
+            🔒 Accès sécurisé réservé aux comptes autorisés.<br/>
+            Seuls les administrateurs peuvent se connecter.
+          </p>
+        </div>
 
-        {/* FORMULAIRE DE CONNEXION PRINCIPAL */}
-        {!forgotMode && !resetMode && (
-          <form onSubmit={handleSubmit}>
-            <h2 className="font-bold mb-6 text-center text-white" style={{ fontSize: '24px' }}>{t('coachLogin')}</h2>
-            {error && <div className="mb-4 p-3 rounded-lg text-center" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }}>{error}</div>}
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block mb-2 text-white text-sm">{t('email')}</label>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full px-4 py-3 rounded-lg neon-input" placeholder="coach@afroboost.com" data-testid="coach-login-email" />
-              </div>
-              <div>
-                <label className="block mb-2 text-white text-sm">{t('password')}</label>
-                <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full px-4 py-3 rounded-lg neon-input" placeholder="••••••••" data-testid="coach-login-password" />
-              </div>
-            </div>
-            <button type="submit" className="btn-primary w-full py-3 rounded-lg font-bold mb-3" data-testid="coach-login-submit">{t('login')}</button>
-            <button 
-              type="button" 
-              onClick={() => { setForgotMode(true); setError(""); setSuccessMessage(""); }}
-              className="w-full text-center mb-4" 
-              style={{ color: '#d91cd2', background: 'none', border: 'none', textDecoration: 'underline', cursor: 'pointer', fontSize: '14px' }}
-            >
-              {t('forgotPassword')}
-            </button>
-            <button type="button" onClick={onCancel} className="w-full py-2 rounded-lg glass text-white" data-testid="coach-login-cancel">{t('cancel')}</button>
-          </form>
-        )}
+        {/* Bouton Annuler */}
+        <button 
+          type="button" 
+          onClick={onCancel} 
+          className="w-full py-2 mt-4 rounded-lg glass text-white text-sm"
+          data-testid="coach-login-cancel"
+        >
+          {t('cancel') || 'Annuler'}
+        </button>
       </div>
     </div>
   );
