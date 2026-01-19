@@ -2107,20 +2107,23 @@ function App() {
   // STRIPE CHECKOUT: Gestion du retour de paiement
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const paymentSuccess = urlParams.get('payment_success');
-    const paymentCanceled = urlParams.get('payment_canceled');
+    // Détecter payment=success ou payment_success=true (compatibilité)
+    const paymentParam = urlParams.get('payment');
+    const paymentSuccess = paymentParam === 'success' || urlParams.get('payment_success') === 'true';
+    const paymentCanceled = paymentParam === 'canceled' || urlParams.get('payment_canceled') === 'true';
     const sessionId = urlParams.get('session_id');
     
     // Nettoyer l'URL après lecture
     const cleanUrl = () => {
       const url = new URL(window.location.href);
+      url.searchParams.delete('payment');
       url.searchParams.delete('payment_success');
       url.searchParams.delete('payment_canceled');
       url.searchParams.delete('session_id');
       window.history.replaceState({}, document.title, url.pathname);
     };
     
-    if (paymentSuccess === 'true' && sessionId) {
+    if (paymentSuccess && sessionId) {
       // Paiement réussi - finaliser la réservation et afficher le TICKET avec QR code
       const pendingReservationData = localStorage.getItem('pendingReservation');
       if (pendingReservationData) {
@@ -2159,9 +2162,8 @@ function App() {
               setLastReservation(res.data);
               setShowSuccess(true); // Affiche le ticket avec QR Code instantanément
             } else {
-              // Paiement non encore confirmé - réessayer dans quelques secondes
+              // Paiement non encore confirmé - créer quand même la réservation
               console.log("Payment not yet confirmed, status:", statusResponse.data);
-              // Afficher quand même le ticket si la réservation existe
               const res = await axios.post(`${API}/reservations`, {
                 ...reservation,
                 stripeSessionId: sessionId,
@@ -2193,11 +2195,10 @@ function App() {
         finalizeReservation();
       } else {
         // Pas de réservation en attente mais session_id présent
-        // Cela peut arriver si l'utilisateur rafraîchit la page
         console.log("No pending reservation found for session:", sessionId);
       }
       cleanUrl();
-    } else if (paymentCanceled === 'true') {
+    } else if (paymentCanceled) {
       // Paiement annulé - afficher un message
       localStorage.removeItem('pendingReservation');
       setValidationMessage("Paiement annulé. Vous pouvez réessayer.");
