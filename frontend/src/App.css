@@ -99,14 +99,14 @@
 .variant-chip:hover {
   border-color: var(--primary-color);
   color: #fff;
-  background: rgba(217, 28, 210, 0.1);
+  background: color-mix(in srgb, var(--primary-color) 10%, transparent);
 }
 
 .variant-chip.selected {
-  background: rgba(217, 28, 210, 0.25);
-  border-color: #D91CD2;
+  background: color-mix(in srgb, var(--primary-color) 25%, transparent);
+  border-color: var(--primary-color);
   color: #fff;
-  box-shadow: 0 0 8px rgba(217, 28, 210, 0.3);
+  box-shadow: 0 0 8px var(--glow-color);
 }
 
 .variant-chip:disabled {
