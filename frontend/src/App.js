@@ -2122,9 +2122,9 @@ function App() {
     
     if (paymentSuccess === 'true' && sessionId) {
       // Paiement réussi - finaliser la réservation
-      const pendingReservation = localStorage.getItem('pendingReservation');
-      if (pendingReservation) {
-        const reservation = JSON.parse(pendingReservation);
+      const pendingReservationData = localStorage.getItem('pendingReservation');
+      if (pendingReservationData) {
+        const reservation = JSON.parse(pendingReservationData);
         
         // Vérifier le statut du paiement puis créer la réservation
         const finalizeReservation = async () => {
@@ -2155,12 +2155,15 @@ function App() {
               // Nettoyer
               localStorage.removeItem('pendingReservation');
               
-              // Afficher le succès
+              // Afficher la PAGE de succès paiement (plein écran)
               setLastReservation(res.data);
-              setShowSuccess(true);
+              setShowPaymentSuccessPage(true);
             }
           } catch (err) {
             console.error("Error finalizing reservation:", err);
+            // En cas d'erreur, afficher quand même un message
+            setValidationMessage("Paiement reçu, mais erreur lors de la finalisation. Veuillez nous contacter.");
+            setTimeout(() => setValidationMessage(""), 5000);
           }
         };
         
@@ -2168,8 +2171,10 @@ function App() {
       }
       cleanUrl();
     } else if (paymentCanceled === 'true') {
-      // Paiement annulé
+      // Paiement annulé - afficher un message
       localStorage.removeItem('pendingReservation');
+      setValidationMessage("Paiement annulé. Vous pouvez réessayer.");
+      setTimeout(() => setValidationMessage(""), 4000);
       cleanUrl();
     }
   }, []);
