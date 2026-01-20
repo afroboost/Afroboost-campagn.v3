@@ -4716,7 +4716,12 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                           <td className="py-3">
                             <div className="flex gap-2">
                               {(campaign.status === 'draft' || campaign.status === 'scheduled') && (
-                                <button onClick={() => launchCampaign(campaign.id)} className="px-3 py-1 rounded text-xs bg-purple-600 hover:bg-purple-700">
+                                <button 
+                                  type="button"
+                                  onClick={(e) => launchCampaignWithSend(e, campaign.id)} 
+                                  className="px-3 py-1 rounded text-xs bg-purple-600 hover:bg-purple-700"
+                                  data-testid={`launch-campaign-${campaign.id}`}
+                                >
                                   🚀 Lancer
                                 </button>
                               )}
