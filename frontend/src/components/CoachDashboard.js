@@ -1519,6 +1519,81 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
 
   // === WHATSAPP API FUNCTIONS ===
   
+  // === FONCTION ENVOI WHATSAPP DIRECT AVEC LOG ===
+  // Log clair pour vérifier que les données circulent
+  const sendWhatsAppMessageDirect = async (phoneNumber, message, mediaUrl = null) => {
+    const config = whatsAppConfig;
+    
+    // LOG CLAIR: Afficher toutes les données envoyées
+    console.log('📱 === ENVOI WHATSAPP ===');
+    console.log('📱 Envoi WhatsApp vers:', phoneNumber);
+    console.log('📱 Message:', message);
+    console.log('📱 Media URL:', mediaUrl || 'Aucun');
+    console.log('📱 Avec SID:', config.accountSid || 'NON CONFIGURÉ');
+    console.log('📱 Auth Token:', config.authToken ? '***' + config.authToken.slice(-4) : 'NON CONFIGURÉ');
+    console.log('📱 From Number:', config.fromNumber || 'NON CONFIGURÉ');
+    
+    // Vérifier la configuration
+    if (!config.accountSid || !config.authToken || !config.fromNumber) {
+      console.error('❌ Configuration WhatsApp/Twilio incomplète');
+      return { 
+        success: false, 
+        error: 'Configuration Twilio incomplète. Vérifiez Account SID, Auth Token et From Number.' 
+      };
+    }
+    
+    // Formater le numéro au format E.164
+    let formattedPhone = phoneNumber.replace(/[^\d+]/g, '');
+    if (!formattedPhone.startsWith('+')) {
+      if (formattedPhone.startsWith('0')) {
+        formattedPhone = '+41' + formattedPhone.substring(1);
+      } else {
+        formattedPhone = '+' + formattedPhone;
+      }
+    }
+    
+    console.log('📱 Numéro formaté:', formattedPhone);
+    
+    // Construire les données pour Twilio
+    const formData = new URLSearchParams();
+    formData.append('From', `whatsapp:${config.fromNumber.startsWith('+') ? config.fromNumber : '+' + config.fromNumber}`);
+    formData.append('To', `whatsapp:${formattedPhone}`);
+    formData.append('Body', message);
+    
+    if (mediaUrl) {
+      formData.append('MediaUrl', mediaUrl);
+    }
+    
+    console.log('📱 Données Twilio:', Object.fromEntries(formData));
+    
+    try {
+      // Appel DIRECT à l'API Twilio
+      const response = await fetch(
+        `https://api.twilio.com/2010-04-01/Accounts/${config.accountSid}/Messages.json`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Basic ' + btoa(`${config.accountSid}:${config.authToken}`),
+            'Content-Type': 'application/x-www-form-urlencoded'
+          },
+          body: formData
+        }
+      );
+      
+      const data = await response.json();
+      console.log('📱 Réponse Twilio:', data);
+      
+      if (!response.ok) {
+        return { success: false, error: data.message || `HTTP ${response.status}`, code: data.code };
+      }
+      
+      return { success: true, sid: data.sid, status: data.status };
+    } catch (error) {
+      console.error('❌ Erreur Twilio:', error);
+      return { success: false, error: error.message };
+    }
+  };
+  
   // Sauvegarder la configuration WhatsApp
   const handleSaveWhatsAppConfig = async () => {
     const success = await saveWhatsAppConfig(whatsAppConfig);
@@ -1546,20 +1621,25 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     // Sauvegarder d'abord la config actuelle
     await handleSaveWhatsAppConfig();
     
-    console.log('🧪 Testing WhatsApp with number:', testWhatsAppNumber);
+    console.log('🧪 Testing WhatsApp DIRECT with number:', testWhatsAppNumber);
     setTestWhatsAppStatus('sending');
     
     try {
-      const result = await testWhatsAppConfig(testWhatsAppNumber);
+      // Utiliser la fonction directe avec logs
+      const result = await sendWhatsAppMessageDirect(
+        testWhatsAppNumber,
+        '🎉 Test Afroboost WhatsApp API!\n\nVotre configuration Twilio fonctionne correctement.'
+      );
+      
       console.log('📱 WhatsApp test result:', result);
       
       if (result.success) {
         setTestWhatsAppStatus('success');
-        alert('✅ WhatsApp de test envoyé avec succès !');
+        alert(`✅ WhatsApp de test envoyé avec succès !\n\nSID: ${result.sid}`);
         setTimeout(() => setTestWhatsAppStatus(null), 5000);
       } else {
         setTestWhatsAppStatus('error');
-        alert(`❌ Erreur: ${result.error}`);
+        alert(`❌ Erreur Twilio: ${result.error}\n\nCode: ${result.code || 'N/A'}`);
         console.error('❌ WhatsApp test failed:', result.error);
         setTimeout(() => setTestWhatsAppStatus(null), 3000);
       }
