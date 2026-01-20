@@ -1290,26 +1290,47 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       return;
     }
 
+    console.log('🚀 Starting email campaign...');
+    console.log('📧 Recipients:', emailContacts);
+    console.log('📝 Campaign:', newCampaign);
+
     // Réinitialiser les résultats précédents
     setEmailSendingResults(null);
     setEmailSendingProgress({ current: 0, total: emailContacts.length, status: 'starting' });
 
-    // Envoyer les emails
-    const results = await sendBulkEmails(
-      emailContacts,
-      {
-        name: newCampaign.name || 'Afroboost - Message',
-        message: newCampaign.message,
-        mediaUrl: newCampaign.mediaUrl
-      },
-      (current, total, status, name) => {
-        setEmailSendingProgress({ current, total, status, name });
-      }
-    );
+    try {
+      // Envoyer les emails
+      const results = await sendBulkEmails(
+        emailContacts,
+        {
+          name: newCampaign.name || 'Afroboost - Message',
+          message: newCampaign.message,
+          mediaUrl: newCampaign.mediaUrl
+        },
+        (current, total, status, name) => {
+          console.log(`📧 Progress: ${current}/${total} - ${status} - ${name}`);
+          setEmailSendingProgress({ current, total, status, name });
+        }
+      );
 
-    // Afficher les résultats
-    setEmailSendingResults(results);
-    setEmailSendingProgress(null);
+      console.log('✅ Campaign results:', results);
+
+      // Afficher les résultats
+      setEmailSendingResults(results);
+      setEmailSendingProgress(null);
+
+      // Notification
+      if (results.sent > 0) {
+        alert(`✅ Campagne terminée !\n\n✓ Envoyés: ${results.sent}\n✗ Échoués: ${results.failed}`);
+      } else {
+        alert(`❌ Échec de la campagne.\n\nErreurs: ${results.errors.join('\n')}`);
+      }
+    } catch (error) {
+      console.error('❌ Campaign error:', error);
+      setEmailSendingProgress(null);
+      alert(`❌ Erreur lors de l'envoi: ${error.message}`);
+    }
+  };
   };
 
   // === WHATSAPP API FUNCTIONS ===
