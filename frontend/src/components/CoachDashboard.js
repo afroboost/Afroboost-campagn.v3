@@ -1786,55 +1786,16 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       // Délai
       await new Promise(r => setTimeout(r, 300));
     }
-          "5LfgQSIEQoqq_XSqt"
-        );
 
-        // === VALIDATION : LOG SI STATUS 200 ===
-        if (response.status === 200) {
-          console.log("SUCCESS: Email envoyé via EmailJS");
-        }
-        
-        results.sent++;
-        results.details.push({ email: contact.email, status: 'sent' });
+    console.log('CAMPAGNE TERMINÉE - Envoyés:', results.sent, '- Échoués:', results.failed);
 
-      } catch (error) {
-        // === BYPASS DATACLONEERROR (POSTHOG) ===
-        const errorName = error?.name || 'Unknown';
-        const errorMsg = error?.text || error?.message || 'Erreur inconnue';
-        
-        console.error(`EMAILJS_DEBUG: ÉCHEC - ${errorName}: ${errorMsg}`);
-        
-        // Si DataCloneError → ignorer et continuer (l'email a peut-être été envoyé)
-        if (errorName === 'DataCloneError' || errorMsg.includes('clone')) {
-          console.log("SUCCESS: Email envoyé via EmailJS (erreur tracking ignorée)");
-          results.sent++;
-        } else {
-          results.failed++;
-          results.errors.push(`${contact.email}: ${errorMsg}`);
-        }
-      }
+    setEmailSendingResults(results);
+    setEmailSendingProgress(null);
 
-      // Délai entre les envois
-      if (i < emailContacts.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-      }
-    }
-
-    console.log('EMAILJS_DEBUG: Campagne terminée - Envoyés:', results.sent, '- Échoués:', results.failed);
-
-    // Afficher les résultats
-    try {
-      setEmailSendingResults(results);
-      setEmailSendingProgress(null);
-    } catch (e) {
-      console.warn('EMAILJS_DEBUG: setState final bloqué');
-    }
-
-    // Notification finale
     if (results.sent > 0) {
-      alert(`✅ Campagne terminée !\n\n✓ Envoyés: ${results.sent}\n✗ Échoués: ${results.failed}`);
+      alert(`✅ Envoyés: ${results.sent} / Échoués: ${results.failed}`);
     } else {
-      alert(`❌ Échec de la campagne.\n\nErreurs: ${results.errors.join('\n')}`);
+      alert(`❌ Échec total. Erreurs: ${results.errors.join(', ')}`);
     }
   };
 
