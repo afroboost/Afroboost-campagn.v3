@@ -2002,6 +2002,91 @@ async def handle_whatsapp_webhook(webhook: WhatsAppWebhook):
         logger.error(f"AI error: {str(e)}")
         return {"status": "error", "message": str(e)}
 
+# --- Endpoint pour envoyer WhatsApp depuis le frontend (Liaison IA -> Twilio) ---
+class SendWhatsAppRequest(BaseModel):
+    to: str
+    message: str
+    mediaUrl: str = None
+
+@api_router.post("/send-whatsapp")
+async def send_whatsapp_message(request: SendWhatsAppRequest):
+    """
+    Endpoint pour que l'agent IA puisse envoyer des WhatsApp
+    Utilise la config Twilio stockée en base
+    """
+    import httpx
+    
+    # Récupérer la config WhatsApp/Twilio
+    whatsapp_config = await db.whatsapp_config.find_one({"id": "whatsapp_config"}, {"_id": 0})
+    
+    if not whatsapp_config:
+        logger.warning("WhatsApp config not found - simulation mode")
+        return {
+            "status": "simulated",
+            "message": f"WhatsApp prêt pour: {request.to}",
+            "simulated": True
+        }
+    
+    account_sid = whatsapp_config.get("accountSid")
+    auth_token = whatsapp_config.get("authToken")
+    from_number = whatsapp_config.get("fromNumber")
+    
+    if not account_sid or not auth_token or not from_number:
+        logger.warning("Twilio config incomplete - simulation mode")
+        return {
+            "status": "simulated",
+            "message": f"WhatsApp simulé pour: {request.to}",
+            "simulated": True
+        }
+    
+    # Formater le numéro
+    to_phone = request.to.replace(" ", "").replace("-", "")
+    if not to_phone.startswith("+"):
+        to_phone = "+41" + to_phone.lstrip("0") if to_phone.startswith("0") else "+" + to_phone
+    
+    from_phone = from_number if from_number.startswith("+") else "+" + from_number
+    
+    # Construire la requête Twilio
+    twilio_url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
+    
+    data = {
+        "From": f"whatsapp:{from_phone}",
+        "To": f"whatsapp:{to_phone}",
+        "Body": request.message
+    }
+    
+    if request.mediaUrl:
+        data["MediaUrl"] = request.mediaUrl
+    
+    logger.info(f"IA : Envoi WhatsApp vers {to_phone}")
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                twilio_url,
+                data=data,
+                auth=(account_sid, auth_token)
+            )
+            
+            result = response.json()
+            
+            if response.status_code >= 400:
+                logger.error(f"Twilio error: {result}")
+                return {"status": "error", "error": result.get("message", "Unknown error")}
+            
+            logger.info(f"IA : Message WhatsApp envoyé - SID: {result.get('sid')}")
+            print("IA : Message envoyé via WhatsApp (Twilio)")
+            
+            return {
+                "status": "success",
+                "sid": result.get("sid"),
+                "to": to_phone
+            }
+            
+    except Exception as e:
+        logger.error(f"WhatsApp send error: {str(e)}")
+        return {"status": "error", "error": str(e)}
+
 # --- Endpoint pour tester l'IA manuellement ---
 @api_router.post("/ai-test")
 async def test_ai_response(data: dict):
