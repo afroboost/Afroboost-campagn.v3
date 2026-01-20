@@ -4003,6 +4003,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                       onChange={e => setTestEmailAddress(e.target.value)}
                       className="flex-1 px-3 py-2 rounded-lg neon-input text-sm"
                       placeholder="Email de test..."
+                      data-testid="test-email-input"
                     />
                     <button 
                       type="button"
@@ -4014,6 +4015,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                         testEmailStatus === 'sending' ? 'bg-yellow-600' :
                         'bg-purple-600 hover:bg-purple-700'
                       } text-white disabled:opacity-50`}
+                      data-testid="test-email-btn"
                     >
                       {testEmailStatus === 'sending' ? '⏳...' :
                        testEmailStatus === 'success' ? '✅ Envoyé!' :
