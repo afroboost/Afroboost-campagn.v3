@@ -1604,7 +1604,13 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   };
 
   // === ENVOI GROUPÉ (EMAIL + WHATSAPP) ===
-  const handleBulkSendCampaign = async () => {
+  const handleBulkSendCampaign = async (e) => {
+    // Protection PostHog - Empêcher la propagation d'événements
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     const contacts = getContactsForDirectSend();
     const emailContacts = contacts
       .filter(c => c.email && c.email.includes('@'))
@@ -1639,40 +1645,53 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     
     const results = { email: null, whatsapp: null };
 
-    // Envoyer les emails d'abord
-    if (hasEmail) {
-      setBulkSendingProgress({ channel: 'email', current: 0, total: emailContacts.length, name: '' });
-      results.email = await sendBulkEmails(
-        emailContacts,
-        {
-          name: newCampaign.name || 'Afroboost - Message',
-          message: newCampaign.message,
-          mediaUrl: newCampaign.mediaUrl
-        },
-        (current, total, status, name) => {
-          setBulkSendingProgress({ channel: 'email', current, total, name });
-        }
-      );
-    }
+    try {
+      // Envoyer les emails d'abord
+      if (hasEmail) {
+        setBulkSendingProgress({ channel: 'email', current: 0, total: emailContacts.length, name: '' });
+        results.email = await sendBulkEmails(
+          emailContacts,
+          {
+            name: newCampaign.name || 'Afroboost - Message',
+            message: newCampaign.message,
+            mediaUrl: newCampaign.mediaUrl
+          },
+          (current, total, status, name) => {
+            setBulkSendingProgress({ channel: 'email', current, total, name });
+          }
+        );
+      }
 
-    // Puis les WhatsApp
-    if (hasWhatsApp) {
-      setBulkSendingProgress({ channel: 'whatsapp', current: 0, total: phoneContacts.length, name: '' });
-      results.whatsapp = await sendBulkWhatsApp(
-        phoneContacts,
-        {
-          message: newCampaign.message,
-          mediaUrl: newCampaign.mediaUrl
-        },
-        (current, total, status, name) => {
-          setBulkSendingProgress({ channel: 'whatsapp', current, total, name });
-        }
-      );
-    }
+      // Puis les WhatsApp
+      if (hasWhatsApp) {
+        setBulkSendingProgress({ channel: 'whatsapp', current: 0, total: phoneContacts.length, name: '' });
+        results.whatsapp = await sendBulkWhatsApp(
+          phoneContacts,
+          {
+            message: newCampaign.message,
+            mediaUrl: newCampaign.mediaUrl
+          },
+          (current, total, status, name) => {
+            setBulkSendingProgress({ channel: 'whatsapp', current, total, name });
+          }
+        );
+      }
 
-    setBulkSendingProgress(null);
-    setBulkSendingInProgress(false);
-    setBulkSendingResults(results);
+      // Notification de succès
+      const emailSent = results.email?.sent || 0;
+      const emailFailed = results.email?.failed || 0;
+      const waSent = results.whatsapp?.sent || 0;
+      const waFailed = results.whatsapp?.failed || 0;
+      
+      alert(`✅ Campagne terminée !\n\n📧 Emails: ${emailSent} envoyés, ${emailFailed} échoués\n📱 WhatsApp: ${waSent} envoyés, ${waFailed} échoués`);
+    } catch (error) {
+      console.error('❌ Bulk campaign error:', error);
+      alert(`❌ Erreur lors de l'envoi: ${error.message}`);
+    } finally {
+      setBulkSendingProgress(null);
+      setBulkSendingInProgress(false);
+      setBulkSendingResults(results);
+    }
     
     // Mettre à jour le dernier média envoyé pour l'IA
     if (newCampaign.mediaUrl) {
