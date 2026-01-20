@@ -254,25 +254,63 @@ export const sendBulkEmails = async (recipients, campaign, onProgress) => {
 };
 
 /**
- * Teste la configuration EmailJS
+ * Teste la configuration EmailJS avec un payload minimal
+ * Correspond exactement au template 'template_3n1u86p'
  */
 export const testEmailJSConfig = async (testEmail) => {
   console.log('🧪 Testing EmailJS config with email:', testEmail);
   
-  const result = await sendEmail({
-    to_email: testEmail,
-    to_name: 'Test',
-    subject: 'Test EmailJS - Afroboost',
-    message: '🎉 Félicitations ! Votre configuration EmailJS fonctionne correctement.\n\nCet email a été envoyé depuis le panneau admin Afroboost.'
-  });
+  const config = getEmailJSConfig();
   
-  if (result.success) {
-    console.log('✅ Test email sent successfully!', result.response);
-  } else {
-    console.error('❌ Test email failed:', result.error);
+  // Vérifier que les IDs ne sont pas undefined
+  if (!config.serviceId || !config.templateId || !config.publicKey) {
+    console.error('❌ EmailJS config incomplete:', config);
+    return { 
+      success: false, 
+      error: 'Configuration EmailJS incomplète. Vérifiez Service ID, Template ID et Public Key.' 
+    };
   }
   
-  return result;
+  // Initialiser EmailJS
+  try {
+    emailjs.init(config.publicKey);
+  } catch (e) {
+    console.error('❌ EmailJS init failed:', e);
+  }
+  
+  // PAYLOAD SIMPLIFIÉ - Exactement ce que le template attend
+  const params = {
+    to_email: testEmail,
+    to_name: "Ami Afroboost",
+    subject: "Ton test Afroboost",
+    message: "Ceci est un test de configuration EmailJS. Si vous recevez ce message, tout fonctionne !"
+  };
+  
+  console.log('📧 Sending with params:', params);
+  console.log('📧 Config:', { 
+    serviceId: config.serviceId, 
+    templateId: config.templateId, 
+    publicKey: config.publicKey.substring(0, 5) + '...' 
+  });
+  
+  try {
+    // Appel direct à emailjs.send côté client
+    const response = await emailjs.send(
+      config.serviceId,
+      config.templateId,
+      params,
+      config.publicKey
+    );
+    
+    console.log('✅ Test email sent successfully!', response);
+    return { success: true, response };
+  } catch (error) {
+    console.error('❌ Test email failed:', error);
+    return { 
+      success: false, 
+      error: error.text || error.message || 'Erreur EmailJS inconnue'
+    };
+  }
 };
 
 export default {
