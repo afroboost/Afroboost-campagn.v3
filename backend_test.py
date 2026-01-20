@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Dict, Any
 
 class AfroboostAPITester:
-    def __init__(self, base_url="https://stripe-twint-setup.preview.emergentagent.com"):
+    def __init__(self, base_url="https://stripe-payment-10.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0
