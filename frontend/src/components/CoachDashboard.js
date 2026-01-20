@@ -1385,9 +1385,10 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
-  // Tester la configuration EmailJS
+  // === FONCTION TEST EMAILJS DIRECTE ===
+  // Utilise EXCLUSIVEMENT les constantes fixes sans transformation complexe
   const handleTestEmailJS = async (e) => {
-    // Empêcher le rafraîchissement de la page
+    // CRITICAL: Bloquer la propagation pour PostHog
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -1398,31 +1399,45 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       return;
     }
     
-    // Sauvegarder d'abord la config actuelle
-    saveEmailJSConfig(emailJSConfig);
-    
-    console.log('🧪 Testing EmailJS with address:', testEmailAddress);
+    console.log('🧪 Testing EmailJS DIRECT with address:', testEmailAddress);
+    console.log('📧 Using: ServiceID:', EMAILJS_SERVICE_ID, 'TemplateID:', EMAILJS_TEMPLATE_ID);
     setTestEmailStatus('sending');
     
     try {
-      // Créer un objet simple sans références complexes
-      const result = await testEmailJSConfig(testEmailAddress);
-      console.log('📧 Test result:', result);
+      // LIAISON RÉELLE EMAILJS - Objet plat sans transformation
+      const templateParams = {
+        to_email: testEmailAddress,
+        to_name: "Client",
+        subject: "Test Afroboost",
+        message: "Ceci est un test de configuration EmailJS. Si vous recevez ce message, tout fonctionne !"
+      };
       
-      if (result.success) {
+      console.log('📧 Template params:', templateParams);
+      
+      // Appel DIRECT à emailjs.send avec les constantes fixes
+      const response = await emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        templateParams,
+        EMAILJS_PUBLIC_KEY
+      );
+      
+      console.log('✅ EmailJS response:', response);
+      
+      if (response.status === 200 || response.text === 'OK') {
         setTestEmailStatus('success');
         alert('✅ Email de test envoyé avec succès !');
         setTimeout(() => setTestEmailStatus(null), 5000);
       } else {
         setTestEmailStatus('error');
-        alert(`❌ Erreur: ${result.error}`);
-        console.error('❌ Test failed:', result.error);
+        alert(`❌ Erreur: Statut ${response.status}`);
         setTimeout(() => setTestEmailStatus(null), 3000);
       }
     } catch (error) {
       setTestEmailStatus('error');
-      alert(`❌ Erreur: ${error.message}`);
-      console.error('❌ Test exception:', error);
+      const errorMsg = error?.text || error?.message || 'Erreur inconnue';
+      alert(`❌ Erreur EmailJS: ${errorMsg}`);
+      console.error('❌ EmailJS exception:', error);
       setTimeout(() => setTestEmailStatus(null), 3000);
     }
   };
