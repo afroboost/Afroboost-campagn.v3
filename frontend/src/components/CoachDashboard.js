@@ -1053,8 +1053,10 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   };
 
   // Launch campaign WITH REAL SENDING via EmailJS and Twilio
+  // === BOUTON LANCER - ENVOI RÉEL EN BOUCLE ===
+  // Itère sur selectedContacts et appelle emailjs.send pour chaque contact
   const launchCampaignWithSend = async (e, campaignId) => {
-    // Protection PostHog - Empêcher la propagation d'événements
+    // CRITICAL: Protection PostHog - Bloquer propagation
     if (e) {
       e.preventDefault();
       e.stopPropagation();
@@ -1099,79 +1101,102 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
       let totalSent = 0;
       let totalFailed = 0;
 
-      // 5. Envoyer les emails via EmailJS
-      if (emailResults.length > 0 && isEmailJSConfigured()) {
-        addCampaignLog(campaignId, `Envoi de ${emailResults.length} email(s)...`, 'info');
+      // 5. === ENVOI EMAILS DIRECT VIA emailjs.send ===
+      if (emailResults.length > 0) {
+        addCampaignLog(campaignId, `📧 Envoi de ${emailResults.length} email(s) via EmailJS...`, 'info');
+        console.log(`📧 === LANCEMENT CAMPAGNE EMAIL: ${emailResults.length} destinataires ===`);
         
         for (let i = 0; i < emailResults.length; i++) {
-          const result = emailResults[i];
+          const contact = emailResults[i];
+          
+          console.log(`📧 [${i + 1}/${emailResults.length}] Envoi à: ${contact.contactEmail}`);
+          
           try {
-            // Payload JSON plat pour EmailJS - évite DataCloneError
-            const emailSent = await sendBulkEmails(
-              [{ email: result.contactEmail, name: result.contactName }],
-              {
-                name: campaign.name || 'Afroboost - Message',
-                message: campaign.message,
-                mediaUrl: campaign.mediaUrl
-              },
-              null // Pas de callback de progression pour chaque email individuel
+            // LIAISON DIRECTE emailjs.send pour chaque contact sélectionné
+            const templateParams = {
+              to_email: contact.contactEmail,
+              to_name: contact.contactName || "Client",
+              subject: campaign.name || "Afroboost - Message",
+              message: campaign.message
+            };
+            
+            console.log('📧 Template params:', templateParams);
+            
+            const response = await emailjs.send(
+              EMAILJS_SERVICE_ID,
+              EMAILJS_TEMPLATE_ID,
+              templateParams,
+              EMAILJS_PUBLIC_KEY
             );
-
-            if (emailSent.sent > 0) {
+            
+            console.log(`✅ [${i + 1}/${emailResults.length}] Email envoyé:`, response);
+            
+            if (response.status === 200 || response.text === 'OK') {
               totalSent++;
               // Marquer comme envoyé dans le backend
-              await axios.post(`${API}/campaigns/${campaignId}/mark-sent`, {
-                contactId: result.contactId,
-                channel: 'email'
-              });
+              try {
+                await axios.post(`${API}/campaigns/${campaignId}/mark-sent`, {
+                  contactId: contact.contactId,
+                  channel: 'email'
+                });
+              } catch (markErr) {
+                console.warn('⚠️ Impossible de marquer comme envoyé:', markErr);
+              }
             } else {
               totalFailed++;
             }
           } catch (emailErr) {
-            console.error(`❌ Email failed for ${result.contactEmail}:`, emailErr);
+            console.error(`❌ [${i + 1}/${emailResults.length}] Email failed for ${contact.contactEmail}:`, emailErr);
             totalFailed++;
           }
           
-          // Délai entre les envois
+          // Délai entre les envois (300ms pour éviter rate limit)
           if (i < emailResults.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 300));
           }
         }
       }
 
-      // 6. Envoyer les WhatsApp via Twilio
+      // 6. === ENVOI WHATSAPP DIRECT VIA TWILIO ===
       if (whatsAppResults.length > 0 && isWhatsAppConfigured()) {
-        addCampaignLog(campaignId, `Envoi de ${whatsAppResults.length} WhatsApp...`, 'info');
+        addCampaignLog(campaignId, `📱 Envoi de ${whatsAppResults.length} WhatsApp via Twilio...`, 'info');
+        console.log(`📱 === LANCEMENT CAMPAGNE WHATSAPP: ${whatsAppResults.length} destinataires ===`);
         
         for (let i = 0; i < whatsAppResults.length; i++) {
-          const result = whatsAppResults[i];
+          const contact = whatsAppResults[i];
+          
+          console.log(`📱 [${i + 1}/${whatsAppResults.length}] Envoi à: ${contact.contactPhone}`);
+          
           try {
-            // Appel Twilio avec les bons paramètres (phone + message uniquement)
-            const whatsAppSent = await sendBulkWhatsApp(
-              [{ phone: result.contactPhone, name: result.contactName }],
-              {
-                message: campaign.message,
-                mediaUrl: campaign.mediaUrl
-              },
-              null
+            // Utiliser la fonction directe avec logs
+            const result = await sendWhatsAppMessageDirect(
+              contact.contactPhone,
+              campaign.message,
+              campaign.mediaUrl
             );
 
-            if (whatsAppSent.sent > 0) {
+            if (result.success) {
               totalSent++;
+              console.log(`✅ [${i + 1}/${whatsAppResults.length}] WhatsApp envoyé:`, result.sid);
               // Marquer comme envoyé dans le backend
-              await axios.post(`${API}/campaigns/${campaignId}/mark-sent`, {
-                contactId: result.contactId,
-                channel: 'whatsapp'
-              });
+              try {
+                await axios.post(`${API}/campaigns/${campaignId}/mark-sent`, {
+                  contactId: contact.contactId,
+                  channel: 'whatsapp'
+                });
+              } catch (markErr) {
+                console.warn('⚠️ Impossible de marquer comme envoyé:', markErr);
+              }
             } else {
               totalFailed++;
+              console.error(`❌ [${i + 1}/${whatsAppResults.length}] WhatsApp failed:`, result.error);
             }
           } catch (waErr) {
-            console.error(`❌ WhatsApp failed for ${result.contactPhone}:`, waErr);
+            console.error(`❌ [${i + 1}/${whatsAppResults.length}] WhatsApp failed for ${contact.contactPhone}:`, waErr);
             totalFailed++;
           }
           
-          // Délai entre les envois (plus long pour Twilio)
+          // Délai entre les envois (500ms pour Twilio)
           if (i < whatsAppResults.length - 1) {
             await new Promise(resolve => setTimeout(resolve, 500));
           }
