@@ -1,6 +1,10 @@
 // AdminCampaigns.js - Gestionnaire de campagnes marketing avec envoi Email/WA/Insta
 // Compatible Vercel - Extrait de App.js pour architecture modulaire
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import emailjs from '@emailjs/browser';
+
+// Initialisation immédiate d'EmailJS avec votre clé publique
+emailjs.init("5LfgQSIEQoqq_XSqt");
 
 // === HOOKS PERSONNALISÉS POUR LES CAMPAGNES ===
 
@@ -29,6 +33,7 @@ export const useDirectSend = (allContacts, selectedContactsForCampaign, targetTy
   const [currentWhatsAppIndex, setCurrentWhatsAppIndex] = useState(0);
   const [instagramProfile, setInstagramProfile] = useState("afroboost");
   const [messageCopied, setMessageCopied] = useState(false);
+  const [isSendingAuto, setIsSendingAuto] = useState(false);
 
   // Obtenir les contacts pour l'envoi direct
   const getContactsForDirectSend = () => {
@@ -50,7 +55,6 @@ export const useDirectSend = (allContacts, selectedContactsForCampaign, targetTy
       ? `${message}\n\n🔗 Voir le visuel: ${mediaUrl}`
       : message;
     
-    // Premier email en "to", reste en BCC pour confidentialité
     const firstEmail = emails[0];
     const bccEmails = emails.slice(1).join(',');
     
@@ -88,7 +92,6 @@ export const useDirectSend = (allContacts, selectedContactsForCampaign, targetTy
       setMessageCopied(true);
       setTimeout(() => setMessageCopied(false), 3000);
     } catch (err) {
-      // Fallback pour navigateurs plus anciens
       const textarea = document.createElement('textarea');
       textarea.value = fullMessage;
       document.body.appendChild(textarea);
@@ -100,6 +103,40 @@ export const useDirectSend = (allContacts, selectedContactsForCampaign, targetTy
     }
   };
 
+  // --- NOUVELLE FONCTION D'ENVOI AUTOMATIQUE EMAILJS ---
+  const sendAutoEmailJS = async (campaignName, message) => {
+    const contacts = getContactsForDirectSend().filter(c => c.email && c.email.includes('@'));
+    if (contacts.length === 0) {
+      alert("Aucun contact avec email valide trouvé.");
+      return;
+    }
+
+    setIsSendingAuto(true);
+    let successCount = 0;
+
+    try {
+      for (const contact of contacts) {
+        await emailjs.send(
+          "service_8mrmxim",
+          "template_3n1u86p",
+          {
+            to_name: contact.name || "Client",
+            to_email: contact.email,
+            message: message,
+            subject: campaignName || "Afroboost - Message Spécial"
+          }
+        );
+        successCount++;
+      }
+      alert(`Félicitations ! ${successCount} email(s) envoyé(s) avec succès via EmailJS.`);
+    } catch (error) {
+      console.error("Erreur EmailJS:", error);
+      alert("L'envoi a échoué. Vérifiez vos crédits EmailJS ou la console.");
+    } finally {
+      setIsSendingAuto(false);
+    }
+  };
+
   return {
     directSendMode,
     setDirectSendMode,
@@ -107,6 +144,8 @@ export const useDirectSend = (allContacts, selectedContactsForCampaign, targetTy
     instagramProfile,
     setInstagramProfile,
     messageCopied,
+    isSendingAuto,
+    sendAutoEmailJS,
     generateGroupedEmailLink,
     getCurrentWhatsAppContact,
     nextWhatsAppContact,
@@ -118,27 +157,19 @@ export const useDirectSend = (allContacts, selectedContactsForCampaign, targetTy
 
 // === FONCTIONS UTILITAIRES POUR LES CAMPAGNES ===
 
-/**
- * Génère un lien WhatsApp avec message personnalisé
- */
 export const generateWhatsAppLink = (phone, message, mediaUrl, contactName) => {
   const formattedPhone = phone?.replace(/\D/g, '');
-  // Personnaliser le message avec le prénom
   let personalizedMessage = message;
   if (contactName) {
     const firstName = contactName.split(' ')[0];
     personalizedMessage = message.replace(/{prénom}/gi, firstName);
   }
-  // Ajouter le média si présent
   const fullMessage = mediaUrl 
     ? `${personalizedMessage}\n\n🔗 Voir le visuel: ${mediaUrl}`
     : personalizedMessage;
   return `https://api.whatsapp.com/send?phone=${formattedPhone}&text=${encodeURIComponent(fullMessage)}`;
 };
 
-/**
- * Génère un lien Instagram (profil)
- */
 export const generateInstagramLink = (username) => {
   return `https://instagram.com/${username || 'afroboost'}`;
 };
@@ -182,7 +213,9 @@ export const DirectSendPanel = ({
   instagramProfile,
   setInstagramProfile,
   copyMessageForInstagram,
-  messageCopied
+  messageCopied,
+  isSendingAuto,
+  sendAutoEmailJS
 }) => (
   <div className="mb-8 p-5 rounded-xl glass border-2 border-pink-500/50">
     <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
@@ -190,7 +223,6 @@ export const DirectSendPanel = ({
       <span className="text-xs text-pink-400 font-normal">(Utilisez le message ci-dessous)</span>
     </h3>
 
-    {/* Message pour envoi direct */}
     <div className="mb-4">
       <label className="block mb-2 text-white text-sm">Message à envoyer</label>
       <textarea 
@@ -207,31 +239,25 @@ export const DirectSendPanel = ({
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       
-      {/* === EMAIL GROUPÉ (BCC) === */}
-      <div className="p-4 rounded-xl bg-blue-900/20 border border-blue-500/30">
-        <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
-          📧 Email Groupé
+      {/* === EMAIL AUTOMATISÉ EMAILJS === */}
+      <div className="p-4 rounded-xl bg-blue-900/40 border-2 border-blue-400">
+        <h4 className="text-white font-bold mb-3 flex items-center gap-2 text-sm">
+          📧 Email Automatique
         </h4>
-        <p className="text-xs text-white/60 mb-3">
-          {contactStats.withEmail} destinataire(s) en BCC
-        </p>
-        {contactStats.withEmail > 0 ? (
-          <a 
-            href={generateGroupedEmailLink(newCampaign.name, newCampaign.message, newCampaign.mediaUrl)}
-            className="block w-full py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-center font-medium transition-all"
-          >
-            📧 Ouvrir Email
-          </a>
-        ) : (
-          <button disabled className="w-full py-3 rounded-lg bg-gray-600/50 text-gray-400 cursor-not-allowed">
-            Aucun email
-          </button>
-        )}
+        <button 
+          type="button"
+          onClick={() => sendAutoEmailJS(newCampaign.name, newCampaign.message)}
+          disabled={isSendingAuto || contactStats.withEmail === 0}
+          className={`w-full py-3 rounded-lg ${isSendingAuto ? 'bg-gray-600' : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:scale-105'} text-white text-center font-bold transition-all shadow-lg`}
+        >
+          {isSendingAuto ? '⏳ Envoi...' : '🚀 Lancer l\'envoi'}
+        </button>
+        <p className="text-[10px] text-blue-200 mt-2 text-center">Via votre compte EmailJS</p>
       </div>
 
       {/* === WHATSAPP UN PAR UN === */}
       <div className="p-4 rounded-xl bg-green-900/20 border border-green-500/30">
-        <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+        <h4 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
           📱 WhatsApp
         </h4>
         {contactStats.withPhone > 0 ? (
@@ -240,7 +266,7 @@ export const DirectSendPanel = ({
               Contact {currentWhatsAppIndex + 1}/{contactStats.withPhone}
             </p>
             {getCurrentWhatsAppContact() && (
-              <p className="text-sm text-green-300 mb-3 truncate">
+              <p className="text-sm text-green-300 mb-3 truncate font-medium">
                 → {getCurrentWhatsAppContact()?.name}
               </p>
             )}
@@ -255,24 +281,24 @@ export const DirectSendPanel = ({
               rel="noopener noreferrer"
               className="block w-full py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-center font-medium mb-2 transition-all"
             >
-              📱 Envoyer
+              📱 Ouvrir WA
             </a>
             <div className="flex gap-2">
               <button 
                 type="button"
                 onClick={prevWhatsAppContact}
                 disabled={currentWhatsAppIndex === 0}
-                className="flex-1 py-2 rounded-lg glass text-white text-sm disabled:opacity-30"
+                className="flex-1 py-1 rounded-lg glass text-white text-xs disabled:opacity-30"
               >
-                ← Préc.
+                ←
               </button>
               <button 
                 type="button"
                 onClick={nextWhatsAppContact}
                 disabled={currentWhatsAppIndex >= contactStats.withPhone - 1}
-                className="flex-1 py-2 rounded-lg glass text-white text-sm disabled:opacity-30"
+                className="flex-1 py-1 rounded-lg glass text-white text-xs disabled:opacity-30"
               >
-                Suivant →
+                →
               </button>
             </div>
           </>
@@ -285,33 +311,23 @@ export const DirectSendPanel = ({
 
       {/* === INSTAGRAM DM === */}
       <div className="p-4 rounded-xl bg-purple-900/20 border border-purple-500/30">
-        <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+        <h4 className="text-white font-semibold mb-3 flex items-center gap-2 text-sm">
           📸 Instagram DM
         </h4>
-        <div className="mb-3">
-          <label className="text-xs text-white/60 block mb-1">Profil Instagram</label>
-          <input 
-            type="text" 
-            value={instagramProfile}
-            onChange={e => setInstagramProfile(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg neon-input text-sm"
-            placeholder="username"
-          />
-        </div>
         <button 
           type="button"
           onClick={() => copyMessageForInstagram(newCampaign.message, newCampaign.mediaUrl)}
           className={`w-full py-2 rounded-lg ${messageCopied ? 'bg-green-600' : 'bg-purple-600 hover:bg-purple-700'} text-white text-sm font-medium mb-2 transition-all`}
         >
-          {messageCopied ? '✓ Copié !' : '📋 Copier le message'}
+          {messageCopied ? '✓ Copié !' : '📋 Copier'}
         </button>
         <a 
           href={generateInstagramLink(instagramProfile)}
           target="_blank"
           rel="noopener noreferrer"
-          className="block w-full py-2 rounded-lg glass text-white text-center text-sm hover:bg-purple-500/20 transition-all"
+          className="block w-full py-2 rounded-lg glass text-white text-center text-xs hover:bg-purple-500/20 transition-all"
         >
-          📸 Ouvrir Instagram
+          Ouvrir IG
         </a>
       </div>
 
