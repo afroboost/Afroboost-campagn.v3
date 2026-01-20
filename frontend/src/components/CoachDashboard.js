@@ -1399,8 +1399,14 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
-  // Envoyer la campagne WhatsApp automatiquement
-  const handleSendWhatsAppCampaign = async () => {
+  // Envoyer la campagne WhatsApp automatiquement - avec isolation PostHog
+  const handleSendWhatsAppCampaign = async (e) => {
+    // Empêcher le rafraîchissement et la propagation (isolation PostHog)
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!isWhatsAppConfigured()) {
       alert('⚠️ WhatsApp API non configuré. Cliquez sur "⚙️ Config" pour ajouter vos clés Twilio.');
       return;
@@ -1428,19 +1434,32 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     setWhatsAppSendingResults(null);
     setWhatsAppSendingProgress({ current: 0, total: phoneContacts.length, status: 'starting' });
 
-    const results = await sendBulkWhatsApp(
-      phoneContacts,
-      {
-        message: newCampaign.message,
-        mediaUrl: newCampaign.mediaUrl
-      },
-      (current, total, status, name) => {
-        setWhatsAppSendingProgress({ current, total, status, name });
-      }
-    );
+    try {
+      const results = await sendBulkWhatsApp(
+        phoneContacts,
+        {
+          message: newCampaign.message,
+          mediaUrl: newCampaign.mediaUrl
+        },
+        (current, total, status, name) => {
+          setWhatsAppSendingProgress({ current, total, status, name });
+        }
+      );
 
-    setWhatsAppSendingResults(results);
-    setWhatsAppSendingProgress(null);
+      setWhatsAppSendingResults(results);
+      setWhatsAppSendingProgress(null);
+      
+      // Notification de succès
+      if (results.sent > 0) {
+        alert(`✅ Campagne WhatsApp terminée !\n\n✓ Envoyés: ${results.sent}\n✗ Échoués: ${results.failed}`);
+      } else {
+        alert(`❌ Échec de la campagne WhatsApp.\n\nErreurs: ${results.errors.join('\n')}`);
+      }
+    } catch (error) {
+      console.error('❌ WhatsApp campaign error:', error);
+      setWhatsAppSendingProgress(null);
+      alert(`❌ Erreur lors de l'envoi: ${error.message}`);
+    }
   };
 
   // === ENVOI GROUPÉ (EMAIL + WHATSAPP) ===
