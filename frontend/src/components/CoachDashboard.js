@@ -5602,21 +5602,51 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
         {/* ========== ONGLET CONVERSATIONS ========== */}
         {tab === "conversations" && (
           <div className="space-y-6">
-            {/* Header avec bouton génération de lien */}
+            {/* Header avec recherche globale */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
               <div>
                 <h2 className="text-xl font-bold text-white">💬 Conversations</h2>
-                <p className="text-white/60 text-sm">Gérez vos chats et générez des liens de partage</p>
+                <p className="text-white/60 text-sm">Gérez vos chats, liens et contacts CRM</p>
               </div>
-              <button 
-                onClick={loadConversations}
-                disabled={loadingConversations}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                style={{ background: 'rgba(139, 92, 246, 0.3)', color: '#fff' }}
-              >
-                {loadingConversations ? '⏳ Chargement...' : '🔄 Actualiser'}
-              </button>
+              <div className="flex items-center gap-2">
+                {/* Barre de recherche globale */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={conversationSearch}
+                    onChange={(e) => setConversationSearch(e.target.value)}
+                    placeholder="🔍 Rechercher..."
+                    className="px-4 py-2 rounded-lg text-sm w-48 sm:w-64"
+                    style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                    data-testid="conversation-search"
+                  />
+                  {conversationSearch && (
+                    <button
+                      onClick={() => setConversationSearch('')}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-white/50 hover:text-white"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+                <button 
+                  onClick={loadConversations}
+                  disabled={loadingConversations}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{ background: 'rgba(139, 92, 246, 0.3)', color: '#fff' }}
+                >
+                  {loadingConversations ? '⏳' : '🔄'}
+                </button>
+              </div>
             </div>
+
+            {/* Indicateur de recherche */}
+            {conversationSearch && (
+              <div className="text-white/60 text-sm">
+                Résultats pour "<span className="text-purple-400">{conversationSearch}</span>" : 
+                {filteredChatLinks.length} lien(s), {filteredChatSessions.length} conversation(s), {filteredChatParticipants.length} contact(s)
+              </div>
+            )}
 
             {/* Section Générer liens - IA et Communautaire */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
