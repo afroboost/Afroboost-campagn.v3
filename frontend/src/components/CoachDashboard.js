@@ -1310,6 +1310,84 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     return source === 'chat_afroboost' ? 'Widget Chat' : source;
   };
 
+  // === SUPPRESSION CONTACT CRM ===
+  const deleteChatParticipant = async (participantId) => {
+    if (!window.confirm("⚠️ Supprimer ce contact du CRM ?\n\nCette action est irréversible.")) return;
+    
+    try {
+      await axios.delete(`${API}/chat/participants/${participantId}`);
+      setChatParticipants(prev => prev.filter(p => p.id !== participantId));
+    } catch (err) {
+      console.error("Error deleting participant:", err);
+      alert("Erreur lors de la suppression du contact");
+    }
+  };
+
+  // === SUPPRESSION SESSION (Soft Delete) ===
+  const deleteChatSession = async (sessionId) => {
+    if (!window.confirm("⚠️ Supprimer cette conversation ?\n\nLa conversation sera archivée (suppression logique).")) return;
+    
+    try {
+      await axios.put(`${API}/chat/sessions/${sessionId}`, { is_deleted: true });
+      setChatSessions(prev => prev.filter(s => s.id !== sessionId));
+      if (selectedSession?.id === sessionId) {
+        setSelectedSession(null);
+        setSessionMessages([]);
+      }
+    } catch (err) {
+      console.error("Error deleting session:", err);
+      alert("Erreur lors de la suppression de la conversation");
+    }
+  };
+
+  // === AJOUTER CONTACT MANUEL AU CRM (synchronisé avec codes promo) ===
+  const addManualChatParticipant = async (name, email, whatsapp, source = 'manual_promo') => {
+    try {
+      const response = await axios.post(`${API}/chat/participants`, {
+        name,
+        email,
+        whatsapp,
+        source
+      });
+      setChatParticipants(prev => [response.data, ...prev]);
+      return response.data;
+    } catch (err) {
+      console.error("Error adding manual participant:", err);
+      return null;
+    }
+  };
+
+  // === FILTRAGE GLOBAL CONVERSATIONS ===
+  const filteredChatLinks = useMemo(() => {
+    if (!conversationSearch) return chatLinks;
+    const q = conversationSearch.toLowerCase();
+    return chatLinks.filter(l => 
+      l.title?.toLowerCase().includes(q) ||
+      l.link_token?.toLowerCase().includes(q)
+    );
+  }, [chatLinks, conversationSearch]);
+
+  const filteredChatSessions = useMemo(() => {
+    if (!conversationSearch) return chatSessions;
+    const q = conversationSearch.toLowerCase();
+    return chatSessions.filter(s => {
+      // Rechercher dans les noms des participants
+      const participantNames = s.participant_ids?.map(id => getParticipantName(id)).join(' ').toLowerCase() || '';
+      return participantNames.includes(q) || s.title?.toLowerCase().includes(q);
+    });
+  }, [chatSessions, conversationSearch, chatParticipants]);
+
+  const filteredChatParticipants = useMemo(() => {
+    if (!conversationSearch) return chatParticipants;
+    const q = conversationSearch.toLowerCase();
+    return chatParticipants.filter(p => 
+      p.name?.toLowerCase().includes(q) ||
+      p.email?.toLowerCase().includes(q) ||
+      p.whatsapp?.includes(q) ||
+      p.source?.toLowerCase().includes(q)
+    );
+  }, [chatParticipants, conversationSearch]);
+
   // === POLLING NOTIFICATIONS pour nouveaux messages ===
   const lastMessageCountRef = useRef({});
   
@@ -1361,17 +1439,47 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   }, [tab]);
 
-  // Get unique contacts from users and reservations
+  // === CONTACTS COMBINÉS: Users + Reservations + Chat Participants ===
   const allContacts = useMemo(() => {
     const contactMap = new Map();
-    users.forEach(u => contactMap.set(u.email, { id: u.id, name: u.name, email: u.email, phone: u.whatsapp || "" }));
+    
+    // 1. Users existants
+    users.forEach(u => contactMap.set(u.email, { 
+      id: u.id, 
+      name: u.name, 
+      email: u.email, 
+      phone: u.whatsapp || "",
+      source: 'users'
+    }));
+    
+    // 2. Réservations
     reservations.forEach(r => {
       if (r.userEmail && !contactMap.has(r.userEmail)) {
-        contactMap.set(r.userEmail, { id: r.userId, name: r.userName, email: r.userEmail, phone: r.userWhatsapp || "" });
+        contactMap.set(r.userEmail, { 
+          id: r.userId, 
+          name: r.userName, 
+          email: r.userEmail, 
+          phone: r.userWhatsapp || "",
+          source: 'reservations'
+        });
       }
     });
+    
+    // 3. Chat Participants (CRM) - SYNCHRONISATION
+    chatParticipants.forEach(p => {
+      if (p.email && !contactMap.has(p.email)) {
+        contactMap.set(p.email, {
+          id: p.id,
+          name: p.name,
+          email: p.email,
+          phone: p.whatsapp || "",
+          source: p.source || 'chat_crm'
+        });
+      }
+    });
+    
     return Array.from(contactMap.values());
-  }, [users, reservations]);
+  }, [users, reservations, chatParticipants]);
 
   // Filter contacts by search
   const filteredContacts = useMemo(() => {
