@@ -137,8 +137,19 @@ export const ChatWidget = () => {
   const [isCommunityMode, setIsCommunityMode] = useState(false);
   const [lastMessageCount, setLastMessageCount] = useState(0);
   const [privateChatTarget, setPrivateChatTarget] = useState(null);
+  const [messageCount, setMessageCount] = useState(0); // Compteur de messages pour prompt notif
+  const [pushEnabled, setPushEnabled] = useState(false);
   const messagesEndRef = useRef(null);
   const pollingRef = useRef(null);
+
+  // Enregistrer le Service Worker au montage
+  useEffect(() => {
+    if (isPushSupported()) {
+      registerServiceWorker().then(() => {
+        setPushEnabled(isSubscribed());
+      });
+    }
+  }, []);
 
   // Extraire le token de lien depuis l'URL si présent
   const getLinkTokenFromUrl = () => {
