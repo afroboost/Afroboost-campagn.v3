@@ -769,6 +769,38 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
    - Private Chat testé avec sessions existantes
    - Code review complet passé
 
+### Notifications Push & Coach (21 Jan 2026)
+1. ✅ **Web Push API (Notifications Navigateur)**:
+   - Service Worker `/public/sw.js` pour recevoir et afficher les notifications
+   - Service `pushNotificationService.js` pour gérer les souscriptions côté client
+   - Endpoint `GET /api/push/vapid-key` - retourne la clé VAPID publique
+   - Endpoint `POST /api/push/subscribe` - enregistre une souscription push
+   - Endpoint `DELETE /api/push/subscribe/{id}` - désactive une souscription
+   - Endpoint `POST /api/push/send` - envoie une notification push à un participant
+   - Clés VAPID configurées dans backend/.env
+   - Intégration avec `pywebpush` pour l'envoi serveur
+
+2. ✅ **Backup Email via Resend (Simulation)**:
+   - Fonction `send_backup_email()` envoie un email si la notification push échoue
+   - Mode simulation quand RESEND_API_KEY non configuré (logs dans backend.err.log)
+   - Template HTML stylisé avec branding Afroboost
+   - Collection `push_subscriptions` pour stocker les souscriptions
+
+3. ✅ **Notifications Coach (Mode Humain)**:
+   - Fonction `notify_coach_new_message()` notifie le coach par email
+   - Appelée automatiquement quand un message arrive en mode "human"
+   - Flag `coach_notified: true` dans la réponse API
+   - Mode simulation avec logs `[SIMULATION COACH EMAIL]`
+   - Récupère l'email du coach depuis `coach_auth`
+
+4. ✅ **Tests automatisés**:
+   - iteration_31: 14/14 backend tests (100%)
+   - VAPID key endpoint testé
+   - Subscribe/Unsubscribe testés avec validation
+   - Push send avec fallback email testé
+   - Toggle AI mode testé
+   - Coach notification en mode human testée
+
 ### P1 - À faire
 - [x] ~~**CRITICAL: Refactoring de App.js**~~ - ✅ COMPLÉTÉ - App.js réduit de 52%
 - [x] ~~**Notifications email après réservation**~~ - ✅ COMPLÉTÉ
