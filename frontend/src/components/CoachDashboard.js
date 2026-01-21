@@ -5707,6 +5707,49 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                 <p className="text-white/60 text-sm">Gérez vos chats, liens et contacts CRM</p>
               </div>
               <div className="flex items-center gap-2">
+                {/* Bouton Test Notification Push */}
+                <button
+                  onClick={async () => {
+                    try {
+                      // Demander la permission si pas encore accordée
+                      if (Notification.permission === 'default') {
+                        const permission = await Notification.requestPermission();
+                        if (permission !== 'granted') {
+                          alert('❌ Vous devez autoriser les notifications pour tester cette fonctionnalité.');
+                          return;
+                        }
+                      }
+                      if (Notification.permission === 'denied') {
+                        alert('❌ Les notifications sont bloquées. Activez-les dans les paramètres de votre navigateur.');
+                        return;
+                      }
+                      
+                      // Enregistrer le Service Worker si nécessaire
+                      if ('serviceWorker' in navigator) {
+                        const registration = await navigator.serviceWorker.register('/sw.js');
+                        await registration.showNotification('🔔 Test Afroboost', {
+                          body: 'Les notifications fonctionnent correctement !',
+                          icon: '/favicon.ico',
+                          badge: '/favicon.ico',
+                          vibrate: [200, 100, 200],
+                          tag: 'afroboost-test'
+                        });
+                        console.log('✅ Notification test envoyée');
+                      } else {
+                        alert('❌ Votre navigateur ne supporte pas les notifications push.');
+                      }
+                    } catch (error) {
+                      console.error('Erreur notification:', error);
+                      alert('❌ Erreur: ' + error.message);
+                    }
+                  }}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
+                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#fff' }}
+                  title="Tester les notifications push"
+                  data-testid="test-push-notification-btn"
+                >
+                  🔔 Test Notif
+                </button>
                 {/* Barre de recherche globale */}
                 <div className="relative">
                   <input
