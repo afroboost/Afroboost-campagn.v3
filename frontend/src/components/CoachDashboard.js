@@ -1158,6 +1158,119 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   }, [tab]);
 
+  // === CONVERSATIONS FUNCTIONS ===
+  const loadConversations = async () => {
+    setLoadingConversations(true);
+    try {
+      const [sessionsRes, participantsRes, linksRes] = await Promise.all([
+        axios.get(`${API}/chat/sessions`),
+        axios.get(`${API}/chat/participants`),
+        axios.get(`${API}/chat/links`)
+      ]);
+      setChatSessions(sessionsRes.data);
+      setChatParticipants(participantsRes.data);
+      setChatLinks(linksRes.data);
+    } catch (err) {
+      console.error("Error loading conversations:", err);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const loadSessionMessages = async (sessionId) => {
+    try {
+      const res = await axios.get(`${API}/chat/sessions/${sessionId}/messages`);
+      setSessionMessages(res.data);
+    } catch (err) {
+      console.error("Error loading messages:", err);
+    }
+  };
+
+  const generateShareableLink = async () => {
+    try {
+      const title = newLinkTitle.trim() || 'Lien Chat Afroboost';
+      const res = await axios.post(`${API}/chat/generate-link`, { title });
+      setChatLinks(prev => [res.data, ...prev]);
+      setNewLinkTitle('');
+      // Recharger les sessions
+      const sessionsRes = await axios.get(`${API}/chat/sessions`);
+      setChatSessions(sessionsRes.data);
+      return res.data;
+    } catch (err) {
+      console.error("Error generating link:", err);
+      return null;
+    }
+  };
+
+  const toggleSessionAI = async (sessionId) => {
+    try {
+      const res = await axios.post(`${API}/chat/sessions/${sessionId}/toggle-ai`);
+      setChatSessions(prev => prev.map(s => s.id === sessionId ? res.data : s));
+      if (selectedSession?.id === sessionId) {
+        setSelectedSession(res.data);
+      }
+    } catch (err) {
+      console.error("Error toggling AI:", err);
+    }
+  };
+
+  const sendCoachMessage = async () => {
+    if (!selectedSession || !coachMessage.trim()) return;
+    try {
+      await axios.post(`${API}/chat/coach-response`, {
+        session_id: selectedSession.id,
+        message: coachMessage.trim(),
+        coach_name: user?.name || 'Coach'
+      });
+      setCoachMessage('');
+      loadSessionMessages(selectedSession.id);
+    } catch (err) {
+      console.error("Error sending coach message:", err);
+    }
+  };
+
+  const copyLinkToClipboard = async (linkToken) => {
+    const baseUrl = window.location.origin;
+    const fullUrl = `${baseUrl}/chat/${linkToken}`;
+    try {
+      await navigator.clipboard.writeText(fullUrl);
+      setCopiedLinkId(linkToken);
+      setTimeout(() => setCopiedLinkId(null), 2000);
+    } catch (err) {
+      // Fallback pour mobile
+      const textarea = document.createElement('textarea');
+      textarea.value = fullUrl;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      setCopiedLinkId(linkToken);
+      setTimeout(() => setCopiedLinkId(null), 2000);
+    }
+  };
+
+  const getParticipantName = (participantId) => {
+    const participant = chatParticipants.find(p => p.id === participantId);
+    return participant?.name || 'Inconnu';
+  };
+
+  const getSourceLabel = (source) => {
+    if (!source) return 'Direct';
+    if (source.startsWith('link_')) {
+      const token = source.replace('link_', '');
+      const link = chatLinks.find(l => l.link_token === token);
+      return link?.title || `Lien ${token.slice(0, 6)}`;
+    }
+    return source === 'chat_afroboost' ? 'Widget Chat' : source;
+  };
+
+  // Load conversations when tab changes
+  useEffect(() => {
+    if (tab === "conversations") {
+      loadConversations();
+    }
+  }, [tab]);
+
   // Get unique contacts from users and reservations
   const allContacts = useMemo(() => {
     const contactMap = new Map();
