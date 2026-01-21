@@ -2824,10 +2824,44 @@ async def get_ai_response_with_session(request: Request):
             "user_message_id": user_message.id
         }
     
-    # Construire le contexte
+    # Construire le contexte enrichi pour les ventes
     default_name = "l'utilisateur"
     participant_name = participant.get('name', default_name)
+    
+    # Récupérer les offres et cours pour les proposer
+    offers = await db.offers.find({"active": True}, {"_id": 0}).to_list(10)
+    courses = await db.courses.find({"archived": {"$ne": True}}, {"_id": 0}).to_list(10)
+    
+    # Construire le contexte de vente
+    sales_context = "\n\n=== CATALOGUE DISPONIBLE ===\n"
+    if offers:
+        sales_context += "\n📦 OFFRES SPÉCIALES:\n"
+        for offer in offers[:5]:
+            sales_context += f"- {offer.get('name', 'Offre')}: {offer.get('price', 'N/A')} CHF - {offer.get('description', '')[:50]}...\n"
+    
+    if courses:
+        sales_context += "\n🎯 COURS DISPONIBLES:\n"
+        for course in courses[:5]:
+            sales_context += f"- {course.get('title', 'Cours')}: {course.get('price', 'N/A')} CHF - {course.get('schedule', '')}\n"
+    
+    # Prompt enrichi pour les ventes
+    sales_prompt = """
+Tu es un assistant commercial expert et chaleureux pour Afroboost, une salle de fitness unique.
+Tes objectifs:
+1. Répondre aux questions avec enthousiasme
+2. Proposer des cours et offres adaptés au client
+3. Guider vers la réservation ou l'achat
+4. Si le client montre de l'intérêt, propose un lien de paiement Stripe
+
+Quand le client veut réserver ou acheter:
+- Propose-lui directement de "cliquer sur le bouton Réserver" sur la page
+- Ou dis-lui qu'il peut payer directement sur le site
+
+Sois concis (max 3 phrases), chaleureux et utilise des emojis avec parcimonie.
+"""
+    
     context = f"\n\nLe client qui te parle s'appelle {participant_name}. Utilise son prénom dans ta réponse."
+    context += sales_context
     
     # Récupérer les derniers messages pour le contexte
     recent_messages = await db.chat_messages.find(
