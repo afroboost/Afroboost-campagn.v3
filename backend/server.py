@@ -2834,12 +2834,21 @@ async def get_ai_response_with_session(request: Request):
     
     # Vérifier si l'IA est active pour cette session
     if not session.get("is_ai_active", True) or session.get("mode") != "ai":
+        # Mode humain - Notifier le coach par e-mail (non-bloquant)
+        asyncio.create_task(
+            notify_coach_new_message(
+                participant_name=participant.get("name", "Un client"),
+                message_preview=message_text,
+                session_id=session_id
+            )
+        )
         return {
             "response": None,
             "ai_active": False,
             "mode": session.get("mode"),
             "message_saved": True,
-            "user_message_id": user_message.id
+            "user_message_id": user_message.id,
+            "coach_notified": True
         }
     
     # Récupérer la config IA
