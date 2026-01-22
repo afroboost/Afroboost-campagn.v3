@@ -846,11 +846,48 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
 - [x] ~~**UX Mobile Chat Widget**~~ - ✅ COMPLÉTÉ (21 Jan 2026) - Widget 85vh mobile, 70vh tablet
 - [x] ~~**Recherche Globale CRM**~~ - ✅ COMPLÉTÉ (21 Jan 2026)
 - [x] ~~**Suppression Multi-Plateforme**~~ - ✅ COMPLÉTÉ (21 Jan 2026)
+- [x] ~~**Système de Lecteur Média Unifié**~~ - ✅ COMPLÉTÉ (22 Jan 2026)
 - [ ] **Migration CSS variables** : Refactoriser les styles inline (`style={{ color: '#D91CD2' }}`) pour utiliser les variables CSS `--primary-color` et `--glow-color`
 - [ ] **Lecteur Audio Côté Client** : Implémenter le lecteur audio sur la page publique pour les cours ayant une playlist
 - [ ] **Optimisation Backend MongoDB** - Appliquer pagination et projection sur les requêtes pour améliorer les performances en production.
 - [ ] Continuer refactoring: Extraire CoachLoginModal dans composant séparé
 - [ ] Tests automatisés pour les composants extraits
+
+### Système de Lecteur Média Unifié (22 Jan 2026)
+1. ✅ **Backend - Endpoints Media Links (`/api/media`)**:
+   - `POST /api/media/create`: Crée un lien média avec titre, video_url, slug, description, cta_text, cta_link
+   - `GET /api/media`: Liste tous les liens média
+   - `GET /api/media/{slug}`: Récupère les détails et incrémente le compteur de vues
+   - `DELETE /api/media/{slug}`: Supprime un lien média
+   - `GET /api/media/{slug}/og`: Retourne une page HTML avec balises OpenGraph pour WhatsApp/réseaux sociaux
+
+2. ✅ **Extraction automatique ID YouTube**:
+   - Supporte: youtube.com/watch?v=, youtu.be/, youtube.com/embed/, youtube.com/shorts/
+   - Génère automatiquement la thumbnail YouTube si aucune personnalisée fournie
+
+3. ✅ **Frontend - MediaViewer (`/v/{slug}`)**:
+   - Lecteur vidéo YouTube épuré (sans branding excessif)
+   - Titre, description et compteur de vues
+   - **Bouton CTA** prominent avec gradient rose/violet
+   - Boutons de partage: Copier le lien, WhatsApp, Email
+   - Design responsive et cohérent avec la charte Afroboost
+
+4. ✅ **Frontend - Tab Médias dans CoachDashboard**:
+   - Formulaire de création de liens média
+   - Slug auto-généré par défaut avec option de personnalisation
+   - URL thumbnail personnalisable (URL externe)
+   - Liste des liens avec thumbnail, vues, date de création
+   - Actions: Copier, Voir, Supprimer
+
+5. ✅ **Aperçus OpenGraph pour WhatsApp/Réseaux sociaux**:
+   - Balises og:title, og:description, og:image
+   - Balises Twitter Card
+   - Page de redirection automatique vers le frontend
+
+6. ✅ **Tests - 21/21 passés (100%)**:
+   - Tous les endpoints API testés
+   - Extraction YouTube testée pour tous les formats d'URL
+   - Flux complet de bout en bout vérifié
 
 ### UX & CRM Améliorations (21 Jan 2026)
 1. ✅ **Widget Chat Responsive Mobile**:
