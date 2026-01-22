@@ -3307,7 +3307,7 @@ async def send_backup_email(participant_id: str, message_preview: str):
                     "{message_preview[:150]}{'...' if len(message_preview) > 150 else ''}"
                 </p>
             </div>
-            <a href="https://afroboost.ch" 
+            <a href="https://afroboosteur.com" 
                style="display: inline-block; background: linear-gradient(135deg, #d91cd2, #8b5cf6); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
                 Voir la conversation
             </a>
