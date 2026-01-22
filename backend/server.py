@@ -3440,7 +3440,7 @@ async def send_campaign_email(request: Request):
             <hr style="border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0;">
             <p style="font-size: 12px; color: #888; text-align: center;">
                 Cet email vous a été envoyé par Afroboost<br>
-                <a href="https://afroboost.ch" style="color: #d91cd2;">afroboost.ch</a>
+                <a href="https://afroboosteur.com" style="color: #d91cd2;">afroboosteur.com</a>
             </p>
         </div>
     </div>
