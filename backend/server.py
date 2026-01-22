@@ -3642,6 +3642,21 @@ async def get_media_link(slug: str):
     
     return media
 
+@api_router.get("/media/{slug}/thumbnail")
+async def get_media_thumbnail(slug: str):
+    """
+    Récupère uniquement la thumbnail d'un lien média.
+    Utilisé par le frontend pour l'aperçu des campagnes.
+    """
+    media = await db.media_links.find_one({"slug": slug.lower()}, {"_id": 0, "thumbnail": 1, "custom_thumbnail": 1, "title": 1})
+    if not media:
+        raise HTTPException(status_code=404, detail="Média non trouvé")
+    
+    return {
+        "thumbnail": media.get("custom_thumbnail") or media.get("thumbnail"),
+        "title": media.get("title", "")
+    }
+
 @api_router.get("/media/{slug}/og")
 async def get_media_opengraph(slug: str):
     """
