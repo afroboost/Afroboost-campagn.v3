@@ -3421,6 +3421,13 @@ async def send_campaign_email(request: Request):
     message = body.get("message", "")
     media_url = body.get("media_url", None)
     
+    # LOG DEBUG CRITIQUE
+    logger.info(f"=== CAMPAGNE EMAIL ===")
+    logger.info(f"To: {to_email}")
+    logger.info(f"Subject: {subject}")
+    logger.info(f"Media URL reçu: {media_url}")
+    logger.info(f"======================")
+    
     if not to_email:
         raise HTTPException(status_code=400, detail="to_email requis")
     if not message:
