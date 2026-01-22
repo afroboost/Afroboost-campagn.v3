@@ -5964,6 +5964,13 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                         >
                           📋 Copier
                         </button>
+                        <button
+                          onClick={() => startEditingMedia(link)}
+                          className="px-3 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white text-xs font-medium transition-all"
+                          title="Modifier ce média"
+                        >
+                          ✏️ Modifier
+                        </button>
                         <a
                           href={`https://afroboosteur.com/v/${link.slug}`}
                           target="_blank"
@@ -5985,6 +5992,116 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                 </div>
               )}
             </div>
+
+            {/* Modal d'édition de média */}
+            {editingMediaLink && (
+              <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+                <div 
+                  className="glass rounded-xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+                  style={{ border: '1px solid rgba(217, 28, 210, 0.3)' }}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-white">✏️ Modifier le média</h3>
+                    <button 
+                      onClick={() => setEditingMediaLink(null)}
+                      className="text-white/60 hover:text-white text-xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  <p className="text-purple-400 text-sm mb-4">/v/{editingMediaLink.slug}</p>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-white/70 text-sm mb-1 block">Titre</label>
+                      <input
+                        type="text"
+                        value={editingMediaLink.title}
+                        onChange={(e) => setEditingMediaLink(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg"
+                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-white/70 text-sm mb-1 block">URL Vidéo</label>
+                      <input
+                        type="text"
+                        value={editingMediaLink.video_url}
+                        onChange={(e) => setEditingMediaLink(prev => ({ ...prev, video_url: e.target.value }))}
+                        className="w-full px-4 py-3 rounded-lg"
+                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-white/70 text-sm mb-1 block">Description</label>
+                      <textarea
+                        value={editingMediaLink.description}
+                        onChange={(e) => setEditingMediaLink(prev => ({ ...prev, description: e.target.value }))}
+                        rows={2}
+                        className="w-full px-4 py-3 rounded-lg resize-none"
+                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-white/70 text-sm mb-1 block">Image personnalisée (URL)</label>
+                      <input
+                        type="text"
+                        value={editingMediaLink.custom_thumbnail}
+                        onChange={(e) => setEditingMediaLink(prev => ({ ...prev, custom_thumbnail: e.target.value }))}
+                        placeholder="Laisser vide pour utiliser YouTube"
+                        className="w-full px-4 py-3 rounded-lg"
+                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-white/70 text-sm mb-1 block">Texte CTA</label>
+                        <input
+                          type="text"
+                          value={editingMediaLink.cta_text}
+                          onChange={(e) => setEditingMediaLink(prev => ({ ...prev, cta_text: e.target.value }))}
+                          placeholder="Réserver"
+                          className="w-full px-4 py-3 rounded-lg"
+                          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-white/70 text-sm mb-1 block">Lien CTA</label>
+                        <input
+                          type="text"
+                          value={editingMediaLink.cta_link}
+                          onChange={(e) => setEditingMediaLink(prev => ({ ...prev, cta_link: e.target.value }))}
+                          placeholder="https://..."
+                          className="w-full px-4 py-3 rounded-lg"
+                          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-white/10">
+                    <button
+                      onClick={() => setEditingMediaLink(null)}
+                      className="px-4 py-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      onClick={handleUpdateMediaLink}
+                      className="px-6 py-2 rounded-lg text-white font-semibold transition-all hover:scale-105"
+                      style={{ background: 'linear-gradient(135deg, #d91cd2, #8b5cf6)' }}
+                    >
+                      💾 Enregistrer
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Instructions */}
             <div 
