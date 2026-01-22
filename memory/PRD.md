@@ -784,9 +784,10 @@ Les fonctions d'envoi sont maintenant **au niveau module** (hors React) pour év
    - Clé API Resend configurée dans backend/.env
    - Domaine vérifié: `afroboosteur.com`
    - Adresse d'expédition: `notifications@afroboosteur.com`
-   - Fonction `send_backup_email()` envoie un email si la notification push échoue
+   - **EmailJS supprimé** - Resend est le moteur unique d'envoi
+   - Endpoint `/api/campaigns/send-email` pour les campagnes marketing
+   - Fonction `send_backup_email()` pour backup notifications push
    - Template HTML stylisé avec branding Afroboost
-   - Collection `push_subscriptions` pour stocker les souscriptions
 
 3. ✅ **Notifications Coach (Mode Humain)**:
    - Fonction `notify_coach_new_message()` notifie le coach par email
