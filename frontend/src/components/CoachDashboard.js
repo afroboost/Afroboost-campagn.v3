@@ -1605,11 +1605,11 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
-  // Copier le lien dans le presse-papier
+  // Copier le lien de PARTAGE dans le presse-papier (avec OpenGraph pour WhatsApp)
   const copyMediaLink = (slug) => {
-    const url = `https://afroboosteur.com/v/${slug}`;
+    const url = `https://afroboosteur.com/api/share/${slug}`;
     navigator.clipboard.writeText(url);
-    alert(`Lien copié: ${url}`);
+    alert(`✅ Lien de partage copié !\n\n${url}\n\n💡 Ce lien affichera un aperçu visuel sur WhatsApp et les réseaux sociaux.`);
   };
 
   // Load media links when tab changes
