@@ -5798,6 +5798,11 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                     {/* Input réponse coach (visible si IA désactivée ou mode communauté) */}
                     {(selectedSession.mode === 'human' || selectedSession.mode === 'community') && (
                       <div className="space-y-2">
+                        {/* DEBUG VISIBLE */}
+                        <div style={{ background: 'yellow', color: 'black', padding: '5px', fontSize: '12px', fontWeight: 'bold' }}>
+                          DEBUG: Session ID = {selectedSession?.id || 'AUCUNE'} | Message = "{coachMessage}" | Sessions dispo = {chatSessions.length}
+                        </div>
+                        
                         {/* Bouton Emoji et Picker */}
                         <div className="relative">
                           <div className="flex gap-2 items-center">
@@ -5820,29 +5825,18 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                               style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}
                               data-testid="coach-message-input"
                             />
-                            {/* BOUTON ENVOI */}
-                            <button
-                              type="button"
-                              id="final-send-btn"
-                              onClick={(e) => { e.preventDefault(); handleSendMessage(); }}
-                              style={{ 
-                                background: '#d91cd2',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '8px',
-                                padding: '10px 20px',
-                                fontSize: '16px',
-                                fontWeight: 'bold',
-                                cursor: 'pointer',
-                                zIndex: 1000,
-                                position: 'relative',
-                                minWidth: '60px',
-                                minHeight: '44px'
+                            {/* LIEN ROUGE SIMPLE - TEST */}
+                            <a 
+                              href="#"
+                              onClick={(e) => { 
+                                e.preventDefault(); 
+                                console.log('CLIC LIEN ROUGE - Session:', selectedSession?.id, 'Message:', coachMessage);
+                                handleSendMessage(); 
                               }}
-                              data-testid="send-coach-message-btn"
+                              style={{ color: 'red', fontWeight: 'bold', fontSize: '18px', textDecoration: 'underline', cursor: 'pointer', padding: '10px' }}
                             >
-                              <span style={{ pointerEvents: 'none', display: 'block' }}>📤</span>
-                            </button>
+                              ENVOYER ICI
+                            </a>
                           </div>
                           
                           {/* Emoji Picker Panel */}
