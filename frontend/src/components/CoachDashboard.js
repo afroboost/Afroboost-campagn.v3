@@ -1003,6 +1003,9 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const [emailSendingProgress, setEmailSendingProgress] = useState(null);
   const [emailSendingResults, setEmailSendingResults] = useState(null);
   const [testEmailAddress, setTestEmailAddress] = useState('');
+  
+  // === RESOLVED THUMBNAIL FOR PREVIEW ===
+  const [resolvedThumbnail, setResolvedThumbnail] = useState(null);
   const [testEmailStatus, setTestEmailStatus] = useState(null);
 
   // === WHATSAPP API STATE ===
