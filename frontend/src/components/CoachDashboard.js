@@ -1608,11 +1608,50 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   };
 
-  // Copier le lien de PARTAGE dans le presse-papier (avec OpenGraph pour WhatsApp)
-  const copyMediaLink = (slug) => {
+  // Copier le lien du LECTEUR dans le presse-papier
+  const copyViewerLink = (slug) => {
+    const url = `https://afroboosteur.com/v/${slug}`;
+    try {
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`📋 Lien du lecteur copié !\n\n${url}`);
+      }).catch(() => {
+        // Fallback pour mobile/Safari
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert(`📋 Lien du lecteur copié !\n\n${url}`);
+      });
+    } catch (e) {
+      prompt('Copiez ce lien:', url);
+    }
+  };
+
+  // Copier le lien de PARTAGE (avec aperçu WhatsApp)
+  const copyShareLink = (slug) => {
     const url = `https://afroboosteur.com/api/share/${slug}`;
-    navigator.clipboard.writeText(url);
-    alert(`✅ Lien de partage copié !\n\n${url}\n\n💡 Ce lien affichera un aperçu visuel sur WhatsApp et les réseaux sociaux.`);
+    try {
+      navigator.clipboard.writeText(url).then(() => {
+        alert(`📤 Lien de partage copié !\n\n${url}\n\n✅ Ce lien affichera une image sur WhatsApp`);
+      }).catch(() => {
+        // Fallback pour mobile/Safari
+        const textarea = document.createElement('textarea');
+        textarea.value = url;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert(`📤 Lien de partage copié !\n\n${url}\n\n✅ Ce lien affichera une image sur WhatsApp`);
+      });
+    } catch (e) {
+      prompt('Copiez ce lien:', url);
+    }
   };
 
   // Load media links when tab changes
