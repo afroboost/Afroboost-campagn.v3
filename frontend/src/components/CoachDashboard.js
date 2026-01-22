@@ -6063,20 +6063,19 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                                 }
                               }}
                               disabled={!coachMessage.trim()}
-                              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                              className="px-4 py-2 rounded-lg text-sm font-medium"
                               style={{ 
                                 background: coachMessage.trim() ? 'linear-gradient(135deg, #d91cd2, #8b5cf6)' : 'rgba(255,255,255,0.1)',
                                 color: '#fff',
                                 opacity: coachMessage.trim() ? 1 : 0.5,
                                 cursor: coachMessage.trim() ? 'pointer' : 'not-allowed',
                                 minWidth: '48px',
-                                minHeight: '40px',
-                                boxShadow: coachMessage.trim() ? '0 0 15px rgba(217, 28, 210, 0.4)' : 'none'
+                                minHeight: '40px'
                               }}
                               data-testid="send-coach-message-btn"
-                              title="Envoyer le message (ou appuyez sur Entrée)"
+                              title="Envoyer le message"
                             >
-                              📤
+                              <span style={{ pointerEvents: 'none' }}>📤</span>
                             </button>
                           </div>
                           
