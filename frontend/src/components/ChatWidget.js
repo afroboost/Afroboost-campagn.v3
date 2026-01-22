@@ -1005,6 +1005,161 @@ export const ChatWidget = () => {
                 </form>
               </div>
             )}
+
+            {/* === MODE COACH: Interface de gestion des conversations === */}
+            {step === 'coach' && isCoachMode && (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                {/* Header Coach */}
+                <div style={{ 
+                  background: 'rgba(217, 28, 210, 0.2)', 
+                  padding: '8px 16px', 
+                  borderBottom: '1px solid rgba(217, 28, 210, 0.3)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <span style={{ color: '#d91cd2', fontSize: '12px', fontWeight: 'bold' }}>
+                    🏋️ Mode Coach
+                  </span>
+                  <button
+                    onClick={loadCoachSessions}
+                    style={{ 
+                      background: 'rgba(255,255,255,0.1)', 
+                      border: 'none', 
+                      padding: '4px 8px', 
+                      borderRadius: '4px',
+                      color: '#fff',
+                      fontSize: '11px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔄 Rafraîchir
+                  </button>
+                </div>
+
+                {/* Liste des sessions ou messages */}
+                {!selectedCoachSession ? (
+                  <div style={{ flex: 1, overflowY: 'auto', padding: '12px' }}>
+                    <div style={{ color: '#fff', fontSize: '12px', marginBottom: '12px', opacity: 0.7 }}>
+                      Conversations actives ({coachSessions.length})
+                    </div>
+                    {coachSessions.length === 0 ? (
+                      <div style={{ color: '#fff', opacity: 0.5, textAlign: 'center', padding: '20px', fontSize: '13px' }}>
+                        Aucune conversation active
+                      </div>
+                    ) : (
+                      coachSessions.map(session => (
+                        <div
+                          key={session.id}
+                          onClick={() => loadCoachSessionMessages(session)}
+                          style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            padding: '10px',
+                            marginBottom: '8px',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <div style={{ color: '#fff', fontSize: '13px', fontWeight: '500' }}>
+                            {session.title || `Session ${session.id.slice(0, 8)}`}
+                          </div>
+                          <div style={{ color: '#888', fontSize: '11px', marginTop: '4px' }}>
+                            {session.mode === 'human' ? '👤 Mode Humain' : session.mode === 'community' ? '👥 Communauté' : '🤖 IA'}
+                            {' • '}
+                            {new Date(session.created_at).toLocaleDateString('fr-FR')}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* Header session sélectionnée */}
+                    <div style={{ 
+                      padding: '8px 12px', 
+                      borderBottom: '1px solid rgba(255,255,255,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}>
+                      <button
+                        onClick={() => setSelectedCoachSession(null)}
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          color: '#d91cd2', 
+                          cursor: 'pointer',
+                          fontSize: '14px'
+                        }}
+                      >
+                        ← Retour
+                      </button>
+                      <span style={{ color: '#fff', fontSize: '12px' }}>
+                        {selectedCoachSession.title || `Session ${selectedCoachSession.id.slice(0, 8)}`}
+                      </span>
+                    </div>
+
+                    {/* Messages */}
+                    <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {messages.map((msg, idx) => (
+                        <MessageBubble 
+                          key={idx} 
+                          msg={msg} 
+                          isUser={msg.type === 'coach'}
+                        />
+                      ))}
+                      <div ref={messagesEndRef} />
+                    </div>
+
+                    {/* Input coach */}
+                    <div style={{ padding: '12px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        value={inputMessage}
+                        onChange={(e) => setInputMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && sendCoachResponse()}
+                        placeholder="Votre réponse..."
+                        style={{
+                          flex: 1,
+                          background: 'rgba(255,255,255,0.1)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          borderRadius: '20px',
+                          padding: '8px 16px',
+                          color: '#fff',
+                          fontSize: '13px',
+                          outline: 'none'
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          sendCoachResponse();
+                        }}
+                        disabled={isLoading || !inputMessage.trim()}
+                        style={{
+                          background: inputMessage.trim() ? 'linear-gradient(135deg, #d91cd2, #8b5cf6)' : 'rgba(255,255,255,0.1)',
+                          border: 'none',
+                          borderRadius: '50%',
+                          width: '40px',
+                          height: '40px',
+                          cursor: inputMessage.trim() ? 'pointer' : 'not-allowed',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          opacity: inputMessage.trim() ? 1 : 0.5
+                        }}
+                        data-testid="coach-widget-send-btn"
+                      >
+                        <span style={{ pointerEvents: 'none' }}><SendIcon /></span>
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
             
             {/* Zone de chat */}
             {step === 'chat' && (
