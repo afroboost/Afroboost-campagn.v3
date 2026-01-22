@@ -6,14 +6,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import axios from "axios";
 import { QRCodeSVG } from "qrcode.react";
-import emailjs from '@emailjs/browser';
-import { 
-  getEmailJSConfig, 
-  saveEmailJSConfig, 
-  isEmailJSConfigured, 
-  sendBulkEmails,
-  testEmailJSConfig 
-} from "../services/emailService";
 import {
   getWhatsAppConfig,
   saveWhatsAppConfig,
@@ -26,14 +18,6 @@ import {
 } from "../services/aiResponseService";
 import { LandingSectionSelector } from "./SearchBar";
 import { playNotificationSound, linkifyText } from "../services/notificationService";
-
-// === 1. FORCE INITIALISATION EMAILJS - AU MONTAGE ===
-emailjs.init("5LfgQSIEQoqq_XSqt");
-
-// === CONSTANTES EMAILJS ===
-const EMAILJS_SERVICE_ID = "service_8mrmxim";
-const EMAILJS_TEMPLATE_ID = "template_3n1u86p";
-const EMAILJS_PUBLIC_KEY = "5LfgQSIEQoqq_XSqt";
 
 // === API BACKEND URL ===
 const API = process.env.REACT_APP_BACKEND_URL || '';
