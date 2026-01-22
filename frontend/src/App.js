@@ -2060,9 +2060,15 @@ function App() {
     setLastReservation(null);
   };
 
-  // Check for /validate/:code URL on mount
+  const [mediaSlug, setMediaSlug] = useState(null);
+  const [clickCount, setClickCount] = useState(0);
+  const [lastClickTime, setLastClickTime] = useState(0);
+
+  // Check for /validate/:code URL and /v/:slug URL on mount
   useEffect(() => {
     const path = window.location.pathname;
+    console.log('App.js - Current path:', path);
+    
     if (path.startsWith('/validate/')) {
       const code = path.replace('/validate/', '').toUpperCase();
       if (code) {
@@ -2072,16 +2078,13 @@ function App() {
     }
     // Check for /v/:slug URL (Media Viewer)
     if (path.startsWith('/v/')) {
-      const slug = path.replace('/v/', '').toLowerCase();
+      const slug = path.replace('/v/', '').split('/')[0].split('?')[0].toLowerCase();
+      console.log('App.js - Media slug detected:', slug);
       if (slug) {
         setMediaSlug(slug);
       }
     }
   }, []);
-
-  const [mediaSlug, setMediaSlug] = useState(null);
-  const [clickCount, setClickCount] = useState(0);
-  const [lastClickTime, setLastClickTime] = useState(0);
 
   // PWA Install Prompt State
   const [installPrompt, setInstallPrompt] = useState(null);
