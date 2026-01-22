@@ -1095,6 +1095,46 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
     }
   }, [tab]);
 
+  // === RÉSOUDRE LA THUMBNAIL POUR L'APERÇU ===
+  // Si mediaUrl est un lien interne /v/slug, on récupère la vraie thumbnail
+  useEffect(() => {
+    const resolveMediaThumbnail = async () => {
+      const url = newCampaign.mediaUrl;
+      
+      if (!url) {
+        setResolvedThumbnail(null);
+        return;
+      }
+      
+      // Vérifier si c'est un lien interne afroboosteur.com/v/slug ou /v/slug
+      let slug = null;
+      if (url.includes('/v/')) {
+        slug = url.split('/v/').pop().split('?')[0].split('#')[0].trim();
+      }
+      
+      if (slug) {
+        // Récupérer la thumbnail depuis l'API
+        try {
+          const res = await axios.get(`${API}/media/${slug}/thumbnail`);
+          if (res.data?.thumbnail) {
+            setResolvedThumbnail(res.data.thumbnail);
+            console.log('THUMBNAIL RESOLVED for slug', slug, ':', res.data.thumbnail);
+          } else {
+            setResolvedThumbnail(null);
+          }
+        } catch (err) {
+          console.warn('Could not resolve thumbnail for slug:', slug);
+          setResolvedThumbnail(null);
+        }
+      } else {
+        // URL externe directe - utiliser telle quelle
+        setResolvedThumbnail(url);
+      }
+    };
+    
+    resolveMediaThumbnail();
+  }, [newCampaign.mediaUrl]);
+
   // === CONVERSATIONS FUNCTIONS ===
   const loadConversations = async () => {
     setLoadingConversations(true);
