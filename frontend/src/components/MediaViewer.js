@@ -26,22 +26,22 @@ const isDirectVideoUrl = (url) => {
   return false;
 };
 
-// Convertit un lien Google Drive en URL de streaming DIRECT
+// Convertit un lien Google Drive en URL de streaming
 const getVideoStreamUrl = (url) => {
   if (!url) return url;
   
-  // Google Drive: extraire l'ID et créer un lien de téléchargement direct
+  // Google Drive: extraire l'ID et créer un lien preview (streaming via iframe)
   if (url.includes('drive.google.com')) {
     // Format: https://drive.google.com/file/d/{FILE_ID}/view
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (match && match[1]) {
-      // Utiliser le format de téléchargement direct pour <video>
-      return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      // Utiliser le format preview pour le streaming vidéo (iframe)
+      return `https://drive.google.com/file/d/${match[1]}/preview`;
     }
     // Format: https://drive.google.com/uc?export=download&id={FILE_ID}
     const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
     if (idMatch && idMatch[1]) {
-      return `https://drive.google.com/uc?export=download&id=${idMatch[1]}`;
+      return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
     }
   }
   
