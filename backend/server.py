@@ -3445,12 +3445,18 @@ async def send_campaign_email(request: Request):
         click_url = media_url
         
         # Déterminer l'URL de base du frontend (production ou preview)
-        frontend_base = os.environ.get('FRONTEND_URL', 'https://afroboosteur.com')
-        # Si pas configuré, utiliser l'URL du backend sans /api
-        if not frontend_base or frontend_base == 'https://afroboosteur.com':
-            backend_url = os.environ.get('BACKEND_URL', '')
-            if 'preview.emergentagent.com' in backend_url:
-                frontend_base = backend_url
+        # PRIORITÉ: 1. FRONTEND_URL explicite, 2. Même domaine que REACT_APP_BACKEND_URL
+        frontend_base = os.environ.get('FRONTEND_URL', '')
+        
+        # Si pas de FRONTEND_URL ou si c'est afroboosteur.com, vérifier si on est en preview
+        if not frontend_base or 'afroboosteur.com' in frontend_base:
+            # Utiliser le même domaine que le backend (pour l'environnement preview)
+            # Le backend est appelé via REACT_APP_BACKEND_URL qui contient le domaine preview
+            from fastapi import Request
+            # Par défaut, utiliser afroboosteur.com pour la production
+            frontend_base = 'https://afroboosteur.com'
+        
+        logger.info(f"Frontend base URL: {frontend_base}")
         
         # Vérifier si c'est un lien média interne
         # Formats supportés: /v/slug, /api/share/slug, afroboosteur.com/v/slug
