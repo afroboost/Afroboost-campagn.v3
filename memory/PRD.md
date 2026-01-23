@@ -24,36 +24,36 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - [x] Login avec Google OAuth (contact.artboost@gmail.com)
 - [x] Tableau de bord avec onglets multiples
 
-### Système de Lecteur Média Unifié (V2 - 23 Jan 2026)
-- [x] **MediaViewer Mode Cinéma** : Design fond sombre (#0c0014), texte blanc
-- [x] **Bouton CTA rose #E91E63** : Bien visible sous la vidéo
+### Système de Lecteur Média Unifié (V3 - 23 Jan 2026)
+- [x] **MediaViewer Mode Cinéma V3** : Player sans marquage YouTube initial
+- [x] **Bouton Play rose #E91E63** : Design personnalisé au centre de la thumbnail
+- [x] **Bouton CTA rose #E91E63** : Point focal sous la vidéo
 - [x] **Aspect-ratio 16:9** : Lecteur vidéo sans bandes noires
-- [x] **Overlays anti-YouTube** : Masquent partiellement le branding YouTube
-- [x] **Affichage dynamique** : Titre (au-dessus), Description (en dessous avec pre-wrap), CTA (après description)
-- [x] **Template Email V2** : Structure ultra-légère pour délivrabilité maximale
+- [x] **Support vidéos directes** : MP4/WebM via `<video>` HTML5 natif
+- [x] **Affichage dynamique** : Titre (au-dessus), Description (pre-wrap), CTA (après)
+- [x] **Template Email V3** : Ratio texte/image amélioré, salutation personnalisée
 
 ---
 
 ## What's Been Implemented (23 Jan 2026)
 
-### MediaViewer V2 - Correction Bug P0
-1. ✅ **Bouton CTA rose #E91E63** : Couleur corrigée de #d91cd2 à #E91E63
-2. ✅ **Header rose #E91E63** : Cohérence visuelle
-3. ✅ **Overlays anti-YouTube** : Gradients en haut (55px) et bas (60px) pour masquer le branding
-4. ✅ **Logs de débogage** : `console.log('[MediaViewer] Données reçues:', JSON.stringify(response.data))`
-5. ✅ **Protection nulles** : Vérification `!media` avant le rendu
-6. ✅ **white-space: pre-wrap** : Sauts de ligne dans la description supportés
+### MediaViewer V3 - Player Sans Marquage
+1. ✅ **Bouton Play personnalisé** : SVG rose #E91E63 au centre de la thumbnail
+2. ✅ **AUCUN marquage YouTube initial** : L'iframe YouTube ne s'affiche qu'après clic
+3. ✅ **Support vidéos directes** : Détection automatique MP4/WebM → `<video>` natif
+4. ✅ **Design Mode Cinéma** : Fond #0c0014, coins arrondis 12px, ombre rose
+5. ✅ **Bouton CTA proéminent** : Rose #E91E63, uppercase, letter-spacing
 
-### Template Email V2 - Amélioration Délivrabilité
-1. ✅ **Structure table** : Layout simplifié pour compatibilité email
-2. ✅ **Bouton #E91E63** : Couleur rose cohérente
-3. ✅ **Image cliquable** : Bordure rose et lien vers /v/{slug}
-4. ✅ **Texte plat** : Évite les div complexes
+### Template Email V3 - Délivrabilité Maximale
+1. ✅ **Salutation personnalisée** : "Salut {prénom},"
+2. ✅ **Texte AVANT image** : Améliore ratio texte/image
+3. ✅ **Structure table HTML** : Compatibilité email maximale
+4. ✅ **Bouton CTA #E91E63** : Cohérent avec la marque
 
-### Tests Automatisés - Iteration 33
-- **Backend** : 10/10 tests passés (100%)
-- **Frontend** : Tous les éléments UI vérifiés
-- **Fichiers** : `/app/tests/test_media_v33.py`
+### Tests Validés
+- **Backend** : 10/10 tests passés (iteration 33)
+- **Frontend** : Player V3 vérifié, aucun marquage YouTube visible
+- **Email** : Template V3 envoyé avec succès
 
 ---
 
@@ -69,7 +69,7 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
     │   ├── App.js      # Point d'entrée, routage /v/{slug}
     │   ├── components/
     │   │   ├── CoachDashboard.js # Monolithe ~6000 lignes
-    │   │   └── MediaViewer.js    # Lecteur vidéo V2 Mode Cinéma
+    │   │   └── MediaViewer.js    # Lecteur vidéo V3 Mode Cinéma
     │   └── services/
     └── .env            # REACT_APP_BACKEND_URL
 ```
@@ -87,8 +87,8 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 {
   "id": "uuid",
   "slug": "string",
-  "video_url": "https://youtube.com/watch?v=xxx",
-  "youtube_id": "xxx",
+  "video_url": "https://youtube.com/watch?v=xxx | https://example.com/video.mp4",
+  "youtube_id": "xxx (si YouTube)",
   "title": "string",
   "description": "string",
   "thumbnail": "url",
@@ -104,18 +104,17 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 ## Prioritized Backlog
 
 ### P0 - Completed ✅
-- [x] MediaViewer V2 avec bouton CTA #E91E63
-- [x] Template Email V2 ultra-léger
-- [x] Tests automatisés iteration 33
+- [x] MediaViewer V3 sans marquage YouTube
+- [x] Template Email V3 avec ratio texte/image
+- [x] Tests automatisés
 
 ### P1 - À faire
 - [ ] **Refactoring CoachDashboard.js** : Extraire composants (>6000 lignes)
-- [ ] **Migration CSS variables** : Variables --primary-color, --glow-color
 - [ ] **Export CSV contacts CRM** : Valider le flux de bout en bout
 
 ### P2 - Backlog
 - [ ] Dashboard analytics pour le coach
-- [ ] Lecteur Audio côté client (playlist des cours)
+- [ ] Support upload vidéo direct (MP4)
 - [ ] Manuel utilisateur
 
 ---
@@ -124,9 +123,10 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
 - **Coach Access**: 3 clics rapides sur "© Afroboost 2025" → Login Google OAuth
 - **Email autorisé**: contact.artboost@gmail.com
 - **Test Media Slug**: session-finale
+- **URL de test**: https://mediahub-973.preview.emergentagent.com/v/session-finale
 
 ---
 
 ## Known Limitations
-- **YouTube branding** : Le watermark "Watch on YouTube" ne peut pas être complètement masqué (limitation API YouTube embed)
-- **Emails Promotions** : Malgré le template simplifié, Gmail peut encore classifier certains emails en Promotions
+- **YouTube branding après clic** : Une fois la vidéo en lecture, le branding YouTube apparaît (limitation API YouTube). Solution: héberger des vidéos MP4 directement.
+- **Emails Promotions** : Le template V3 améliore la délivrabilité mais ne garantit pas 100% l'arrivée en boîte principale.
