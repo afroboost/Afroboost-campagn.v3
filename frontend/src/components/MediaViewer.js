@@ -8,12 +8,49 @@ import axios from 'axios';
 
 const API = process.env.REACT_APP_BACKEND_URL || '';
 
-// Détecte si l'URL est une vidéo directe (MP4, WebM, etc.)
+// Détecte si l'URL est une vidéo directe (MP4, WebM, Google Drive, etc.)
 const isDirectVideoUrl = (url) => {
   if (!url) return false;
-  const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.ogg'];
   const lowerUrl = url.toLowerCase();
-  return videoExtensions.some(ext => lowerUrl.includes(ext));
+  
+  // Extensions vidéo directes
+  const videoExtensions = ['.mp4', '.webm', '.mov', '.m4v', '.ogv', '.ogg'];
+  if (videoExtensions.some(ext => lowerUrl.includes(ext))) return true;
+  
+  // Google Drive links
+  if (lowerUrl.includes('drive.google.com')) return true;
+  
+  // Autres hébergeurs vidéo directs
+  if (lowerUrl.includes('cloudinary.com') && lowerUrl.includes('/video/')) return true;
+  
+  return false;
+};
+
+// Convertit un lien Google Drive en URL de streaming
+const getVideoStreamUrl = (url) => {
+  if (!url) return url;
+  
+  // Google Drive: extraire l'ID et créer un lien preview (streaming)
+  if (url.includes('drive.google.com')) {
+    // Format: https://drive.google.com/file/d/{FILE_ID}/view
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+      // Utiliser le format preview pour le streaming vidéo
+      return `https://drive.google.com/file/d/${match[1]}/preview`;
+    }
+    // Format: https://drive.google.com/uc?export=download&id={FILE_ID}
+    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (idMatch && idMatch[1]) {
+      return `https://drive.google.com/file/d/${idMatch[1]}/preview`;
+    }
+  }
+  
+  return url;
+};
+
+// Vérifie si c'est un lien Google Drive (nécessite iframe)
+const isGoogleDriveUrl = (url) => {
+  return url && url.toLowerCase().includes('drive.google.com');
 };
 
 const MediaViewer = ({ slug }) => {
@@ -40,7 +77,7 @@ const MediaViewer = ({ slug }) => {
     if (slug) loadMedia();
   }, [slug]);
 
-  // Gérer le play - Pour YouTube, on bascule simplement l'état pour afficher l'iframe
+  // Gérer le play
   const handlePlayClick = () => {
     setIsPlaying(true);
   };
@@ -77,6 +114,8 @@ const MediaViewer = ({ slug }) => {
 
   // Détermine le type de lecteur à utiliser
   const hasDirectVideo = isDirectVideoUrl(media.video_url);
+  const isGoogleDrive = isGoogleDriveUrl(media.video_url);
+  const videoStreamUrl = getVideoStreamUrl(media.video_url);
   const thumbnailUrl = media.thumbnail || (media.youtube_id ? `https://img.youtube.com/vi/${media.youtube_id}/maxresdefault.jpg` : null);
 
   return (
@@ -94,10 +133,45 @@ const MediaViewer = ({ slug }) => {
         {/* Titre - Au-dessus de la vidéo */}
         <h1 style={styles.title} data-testid="media-title">{media.title || 'Sans titre'}</h1>
 
-        {/* Lecteur Vidéo HTML5 Natif - Mode Cinéma 16:9 */}
+        {/* Lecteur Vidéo - Mode Cinéma 16:9 */}
         <div style={styles.videoWrapper} data-testid="video-container">
-          {hasDirectVideo ? (
-            /* Player HTML5 natif pour vidéos directes */
+          {isGoogleDrive ? (
+            /* Player Google Drive via iframe (sans marquage) */
+            !isPlaying ? (
+              <>
+                <div 
+                  style={{
+                    ...styles.thumbnailContainer,
+                    backgroundImage: thumbnailUrl ? `url(${thumbnailUrl})` : 'linear-gradient(135deg, #1a1a2e 0%, #0c0014 100%)',
+                  }}
+                >
+                  <div style={styles.thumbnailOverlay}></div>
+                  <button 
+                    onClick={handlePlayClick}
+                    style={styles.playButton}
+                    data-testid="play-button"
+                    aria-label="Lire la vidéo"
+                  >
+                    <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
+                      <circle cx="40" cy="40" r="38" fill="#E91E63" fillOpacity="0.95"/>
+                      <path d="M32 25L58 40L32 55V25Z" fill="white"/>
+                    </svg>
+                  </button>
+                </div>
+              </>
+            ) : (
+              <iframe
+                src={videoStreamUrl}
+                title={media.title || 'Vidéo Afroboost'}
+                style={styles.videoIframe}
+                frameBorder="0"
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+                data-testid="google-drive-player"
+              />
+            )
+          ) : hasDirectVideo ? (
+            /* Player HTML5 natif pour vidéos directes (MP4, WebM) */
             <video
               ref={videoRef}
               src={media.video_url}
@@ -113,20 +187,16 @@ const MediaViewer = ({ slug }) => {
               Votre navigateur ne supporte pas la lecture vidéo.
             </video>
           ) : (
-            /* Player personnalisé avec thumbnail pour YouTube/autres */
+            /* Player YouTube avec thumbnail personnalisée */
             <>
-              {/* Thumbnail comme fond */}
-              <div 
-                style={{
-                  ...styles.thumbnailContainer,
-                  backgroundImage: `url(${thumbnailUrl})`,
-                }}
-              >
-                {/* Overlay sombre pour meilleur contraste */}
-                <div style={styles.thumbnailOverlay}></div>
-                
-                {/* Bouton Play central personnalisé */}
-                {!isPlaying && (
+              {!isPlaying ? (
+                <div 
+                  style={{
+                    ...styles.thumbnailContainer,
+                    backgroundImage: `url(${thumbnailUrl})`,
+                  }}
+                >
+                  <div style={styles.thumbnailOverlay}></div>
                   <button 
                     onClick={handlePlayClick}
                     style={styles.playButton}
@@ -138,11 +208,8 @@ const MediaViewer = ({ slug }) => {
                       <path d="M32 25L58 40L32 55V25Z" fill="white"/>
                     </svg>
                   </button>
-                )}
-              </div>
-              
-              {/* Player YouTube caché - activé au clic */}
-              {isPlaying && (
+                </div>
+              ) : (
                 <iframe
                   src={`https://www.youtube.com/embed/${media.youtube_id}?autoplay=1&modestbranding=1&rel=0&iv_load_policy=3&controls=1&playsinline=1&showinfo=0`}
                   title={media.title || 'Vidéo Afroboost'}
