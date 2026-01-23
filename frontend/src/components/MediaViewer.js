@@ -147,9 +147,9 @@ const MediaViewer = ({ slug }) => {
   );
 };
 
-// Styles en objet JavaScript pour éviter le CSS externe
+// Styles V2 - Mode Cinéma avec bouton CTA #E91E63
 const styles = {
-  // Page
+  // Page - Fond sombre "cinéma"
   page: {
     minHeight: '100vh',
     backgroundColor: '#0c0014',
@@ -172,7 +172,7 @@ const styles = {
     width: '40px',
     height: '40px',
     border: '3px solid #333',
-    borderTopColor: '#d91cd2',
+    borderTopColor: '#E91E63',
     borderRadius: '50%',
     animation: 'spin 1s linear infinite',
   },
@@ -198,13 +198,13 @@ const styles = {
     marginBottom: '20px',
   },
   errorLink: {
-    color: '#d91cd2',
+    color: '#E91E63',
     textDecoration: 'none',
   },
   
-  // Header
+  // Header - Rose Afroboost
   header: {
-    backgroundColor: '#d91cd2',
+    backgroundColor: '#E91E63',
     padding: '12px 20px',
     textAlign: 'center',
   },
@@ -232,16 +232,17 @@ const styles = {
     padding: '25px 15px',
   },
   
-  // Title
+  // Title - Texte blanc
   title: {
-    fontSize: '22px',
+    fontSize: '24px',
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: '20px',
     lineHeight: '1.3',
+    color: '#FFFFFF',
   },
   
-  // Video - Mode Cinéma 16:9 sans bandes noires
+  // Video - Mode Cinéma 16:9
   videoWrapper: {
     position: 'relative',
     width: '100%',
@@ -249,7 +250,7 @@ const styles = {
     backgroundColor: '#000',
     borderRadius: '12px',
     overflow: 'hidden',
-    boxShadow: '0 0 30px rgba(217, 28, 210, 0.3)',
+    boxShadow: '0 0 30px rgba(233, 30, 99, 0.3)',
   },
   videoIframe: {
     position: 'absolute',
@@ -259,11 +260,22 @@ const styles = {
     height: '100%',
     border: 'none',
   },
+  // Overlay pour bloquer le lien "Watch on YouTube" en haut
+  videoOverlayTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '50px',
+    background: 'transparent',
+    cursor: 'default',
+    zIndex: 10,
+  },
   
-  // Description
+  // Description - Texte blanc, supporte les sauts de ligne
   description: {
     fontSize: '16px',
-    lineHeight: '1.6',
+    lineHeight: '1.7',
     color: '#FFFFFF',
     textAlign: 'center',
     marginTop: '25px',
@@ -272,7 +284,7 @@ const styles = {
     padding: '0 10px',
   },
   
-  // CTA Button
+  // CTA Button - ROSE #E91E63 obligatoire
   ctaContainer: {
     textAlign: 'center',
     marginBottom: '35px',
@@ -280,14 +292,14 @@ const styles = {
   ctaButton: {
     display: 'inline-block',
     padding: '18px 50px',
-    backgroundColor: '#d91cd2',
+    backgroundColor: '#E91E63',
     color: '#FFFFFF',
     textDecoration: 'none',
     borderRadius: '50px',
     fontSize: '18px',
     fontWeight: 'bold',
     transition: 'transform 0.2s, box-shadow 0.2s',
-    boxShadow: '0 4px 20px rgba(217, 28, 210, 0.4)',
+    boxShadow: '0 4px 20px rgba(233, 30, 99, 0.5)',
   },
   
   // Share
@@ -297,13 +309,13 @@ const styles = {
     gap: '10px',
     flexWrap: 'wrap',
     paddingTop: '20px',
-    borderTop: '1px solid #222',
+    borderTop: '1px solid #333',
   },
   shareButton: {
     padding: '10px 20px',
     backgroundColor: '#1a1a1a',
     color: '#FFFFFF',
-    border: 'none',
+    border: '1px solid #333',
     borderRadius: '8px',
     cursor: 'pointer',
     fontSize: '14px',
