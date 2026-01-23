@@ -3471,7 +3471,9 @@ async def send_campaign_email(request: Request):
             media_link = await db.media_links.find_one({"slug": slug.lower()}, {"_id": 0})
             if media_link:
                 thumbnail_url = media_link.get("thumbnail") or media_link.get("custom_thumbnail")
-                click_url = f"{frontend_base}/v/{slug}"  # URL du lecteur frontend
+                # SOLUTION REDIRECTION: Utiliser /api/go/{slug} pour redirection HTTP 302
+                # Ceci garantit que le lien fonctionne même si le serveur de prod n'est pas configuré pour SPA
+                click_url = f"{frontend_base}/api/go/{slug}"
                 logger.info(f"Media link found for slug {slug}: click_url={click_url}, thumbnail={thumbnail_url}")
             else:
                 logger.warning(f"Media link not found for slug: {slug}")
