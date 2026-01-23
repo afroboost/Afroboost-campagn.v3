@@ -160,27 +160,16 @@ const MediaViewer = ({ slug }) => {
                 </div>
               </>
             ) : (
-              /* Video HTML5 natif avec lien direct Google Drive */
-              <video
-                ref={videoRef}
+              /* Google Drive via iframe (pas de CORS, lecture fiable) */
+              <iframe
                 src={videoStreamUrl}
-                poster={thumbnailUrl}
-                style={styles.videoPlayer}
-                controls
-                autoPlay
-                controlsList="nodownload noremoteplayback"
-                playsInline
-                onPause={() => setIsPlaying(false)}
-                onError={(e) => {
-                  console.error('[MediaViewer] Erreur chargement vidéo:', e);
-                  setIsPlaying(false); // Revenir à la thumbnail si erreur
-                }}
-                onLoadStart={() => console.log('[MediaViewer] Début chargement vidéo Drive')}
-                onCanPlay={() => console.log('[MediaViewer] Vidéo prête à jouer')}
-                data-testid="html5-video-drive"
-              >
-                Votre navigateur ne supporte pas la lecture vidéo.
-              </video>
+                title={media.title || 'Vidéo Afroboost'}
+                style={styles.videoIframe}
+                frameBorder="0"
+                allow="autoplay; encrypted-media; fullscreen"
+                allowFullScreen
+                data-testid="google-drive-iframe"
+              />
             )
           ) : hasDirectVideo ? (
             /* Player HTML5 natif pour vidéos directes (MP4, WebM) */
