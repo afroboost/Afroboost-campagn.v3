@@ -3473,71 +3473,104 @@ async def send_campaign_email(request: Request):
             # URL externe directe (image)
             thumbnail_url = media_url
         
-        # Générer le HTML de l'image cliquable - V3 avec intro textuelle
+        # Générer le HTML de l'image cliquable - V4 Style "Bravooooo"
         if thumbnail_url:
             if thumbnail_url.startswith('http://'):
                 thumbnail_url = thumbnail_url.replace('http://', 'https://')
             
-            # Template V3 : RATIO TEXTE/IMAGE AMÉLIORÉ
-            # Introduction textuelle AVANT le bloc visuel pour éviter l'onglet Promotions
-            media_html = f'''<p style="text-align:center;margin:0 0 20px 0;">
-<a href="{click_url}" style="display:block;">
-<img src="{thumbnail_url}" width="480" style="max-width:100%;border-radius:8px;border:2px solid #E91E63;" alt="Aperçu vidéo">
+            # Template V4 : Card avec image + bouton overlay style
+            media_html = f'''<!-- Image avec bordure arrondie -->
+<a href="{click_url}" style="display:block;text-decoration:none;">
+<img src="{thumbnail_url}" width="536" style="display:block;width:100%;max-width:536px;border-radius:8px;margin:0 auto;" alt="Aperçu vidéo">
 </a>
-</p>
-<p style="text-align:center;margin:0 0 30px 0;">
-<a href="{click_url}" style="display:inline-block;padding:16px 40px;background:#E91E63;color:#ffffff;text-decoration:none;border-radius:30px;font-family:Arial,sans-serif;font-size:16px;font-weight:bold;">VOIR LA VIDÉO</a>
-</p>'''
+<!-- Bouton "Voir la vidéo" style rose avec icône play -->
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:20px;">
+<tr><td align="center">
+<a href="{click_url}" style="display:inline-block;padding:14px 32px;background:linear-gradient(135deg, #E91E63 0%, #C2185B 100%);color:#ffffff;text-decoration:none;border-radius:8px;font-family:Arial,sans-serif;font-size:15px;font-weight:bold;">
+&#9658; Voir la vidéo
+</a>
+</td></tr>
+</table>'''
     
-    # Template Email V3 - DÉLIVRABILITÉ MAXIMALE
-    # Règles appliquées:
-    # 1. RATIO TEXTE > IMAGE : Introduction textuelle personnalisée en premier
-    # 2. Structure simple table layout
-    # 3. Salutation personnalisée avec le prénom
-    # 4. Texte plat sans HTML complexe
+    # =====================================================
+    # Template Email V4 - Style "BRAVOOOOO" Card Afroboost
+    # =====================================================
+    # Design: Header violet gradient, container noir arrondi
+    # Anti-Promotions: Preheader invisible + salutation texte brut
     
     # Extraire le prénom pour personnalisation
     to_name = body.get("to_name", "")
     first_name = to_name.split()[0] if to_name else "ami(e)"
     
+    # Preheader invisible pour la délivrabilité (apparaît dans l'aperçu Gmail)
+    preheader_text = f"Salut {first_name}, découvre notre nouvelle vidéo exclusive !"
+    
     html_content = f'''<!DOCTYPE html>
 <html lang="fr">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Afroboost</title></head>
-<body style="margin:0;padding:0;background-color:#0c0014;font-family:Arial,Helvetica,sans-serif;">
-<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0c0014;">
-<tr><td align="center" style="padding:30px 15px;">
-<table width="550" cellpadding="0" cellspacing="0" border="0" style="max-width:550px;">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="x-apple-disable-message-reformatting">
+<title>Afroboost</title>
+</head>
+<body style="margin:0;padding:0;background-color:#1a1a1a;font-family:Arial,Helvetica,sans-serif;-webkit-font-smoothing:antialiased;">
 
-<!-- Header Logo -->
-<tr><td align="center" style="padding-bottom:25px;">
-<a href="https://afroboosteur.com" style="color:#E91E63;font-size:24px;font-weight:bold;text-decoration:none;font-family:Arial,sans-serif;">Afroboost</a>
-</td></tr>
+<!-- PREHEADER INVISIBLE (Anti-Promotions) -->
+<div style="display:none;font-size:1px;color:#1a1a1a;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+{preheader_text}
+&#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847; &#847;
+</div>
 
-<!-- Salutation personnalisée -->
-<tr><td style="color:#ffffff;font-size:16px;line-height:1.6;padding-bottom:15px;font-family:Arial,sans-serif;">
+<!-- SALUTATION TEXTE BRUT (Anti-Promotions) - Avant le design -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#1a1a1a;">
+<tr><td align="center" style="padding:20px 15px 5px 15px;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+<tr><td style="color:#cccccc;font-size:14px;line-height:1.5;font-family:Arial,sans-serif;">
 Salut {first_name},
 </td></tr>
+</table>
+</td></tr>
+</table>
 
-<!-- Introduction textuelle AVANT l'image (ratio texte/image) -->
-<tr><td style="color:#ffffff;font-size:15px;line-height:1.7;padding-bottom:25px;font-family:Arial,sans-serif;">
+<!-- CARD PRINCIPALE -->
+<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#1a1a1a;">
+<tr><td align="center" style="padding:10px 15px 30px 15px;">
+<table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#111111;border-radius:12px;overflow:hidden;">
+
+<!-- HEADER VIOLET GRADIENT -->
+<tr><td align="center" style="background:linear-gradient(135deg, #9333EA 0%, #A855F7 50%, #C084FC 100%);padding:20px 30px;">
+<a href="https://afroboosteur.com" style="color:#ffffff;font-size:26px;font-weight:bold;text-decoration:none;font-family:Arial,sans-serif;letter-spacing:1px;">Afroboost</a>
+</td></tr>
+
+<!-- CONTENU PRINCIPAL -->
+<tr><td style="padding:25px 30px;">
+
+<!-- IMAGE + BOUTON -->
+{media_html}
+
+<!-- TEXTE DESCRIPTION (4-5 lignes minimum pour ratio texte/image) -->
+<table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top:25px;">
+<tr><td style="color:#ffffff;font-size:15px;line-height:1.7;font-family:Arial,sans-serif;text-align:left;">
 {message.replace(chr(10), '<br>')}
 </td></tr>
+</table>
 
-<!-- Bloc Media (image + bouton) -->
-<tr><td>
-{media_html}
 </td></tr>
 
-<!-- Footer -->
-<tr><td align="center" style="padding-top:30px;border-top:1px solid #333333;">
+<!-- FOOTER -->
+<tr><td align="center" style="padding:20px 30px;border-top:1px solid #333333;">
 <p style="color:#888888;font-size:12px;margin:0;font-family:Arial,sans-serif;">
-<a href="https://afroboosteur.com" style="color:#E91E63;text-decoration:none;">afroboosteur.com</a>
+Cet email vous a été envoyé par Afroboost<br>
+<a href="https://afroboosteur.com" style="color:#A855F7;text-decoration:none;">afroboosteur.com</a>
 </p>
 </td></tr>
 
 </table>
 </td></tr>
 </table>
+
+</body>
+</html>'''
 </body>
 </html>'''
     
