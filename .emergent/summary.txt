@@ -1,140 +1,123 @@
 <analysis>**original_problem_statement:**
-Initialement, le projet visait à corriger une erreur . Il a ensuite évolué pour construire un système de chat complet avec reconnaissance des utilisateurs, sessions, modes de chat, notifications push (via Web Push API et Resend), et un dashboard pour le coach. Après de multiples itérations de débogage, notamment sur un bouton d'envoi récalcitrant et le remplacement complet d'EmailJS par Resend, la demande finale de l'utilisateur est de créer un **système de média unifié**.
+Initialement, le projet visait à construire un Lecteur Média Unifié. L'objectif a ensuite évolué pour stabiliser l'application, réparer la programmation des campagnes (emails et WhatsApp), et rendre le scheduler de campagnes autonome.
 
-**PRODUCT REQUIREMENTS (pour la nouvelle fonctionnalité):**
-1.  **Lecteur Vidéo Afroboost**: Créer une page de destination sur  qui intègre un lecteur vidéo épuré (masquant la marque YouTube) pour afficher dynamiquement une vidéo et un message.
-2.  **Générateur de Liens Courts**: Transformer les liens média (ex: YouTube) en liens internes mémorables (ex: ).
-3.  **Thumbnails Personnalisables**: Utiliser l'image par défaut de YouTube mais permettre l'upload d'une image personnalisée.
-4.  **Bouton d'Appel à l'Action (CTA)**: Intégrer un bouton configurable (texte + lien) sous la vidéo.
-5.  **Aperçus Riches (Previews)**: S'assurer que les liens génèrent des aperçus riches (titre + image) lorsqu'ils sont partagés sur WhatsApp ou par email.
+L'objectif actuel, et la priorité absolue (P0), est de résoudre un bug critique où le **Chat IA est aveugle** aux données dynamiques du site (offres, produits, articles). L'utilisateur a fourni des preuves vidéo montrant que l'IA ne reconnaît pas les produits existants (ex: café congolais) lors d'une conversation sur l'interface, bien que le produit soit présent en base de données.
+
+Un point de friction constant est la conviction de l'utilisateur que le projet utilise une stack Next.js/Prisma, alors que la stack réelle est **React (JavaScript) / FastAPI (Python) / MongoDB**.
 
 **User's preferred language**: Français
 
 **what currently exists?**
-L'application est une stack complète React/FastAPI/MongoDB. Un système de chat robuste, un dashboard coach, et un système de notifications push via Resend sont fonctionnels. La migration d'EmailJS vers Resend pour toutes les communications par email (y compris les campagnes) est terminée.
-L'agent a commencé l'implémentation du **système de média unifié** :
-*   **Backend ()**: Ajout d'un modèle Pydantic  et des endpoints pour créer et récupérer les liens (). Un endpoint racine  a été créé pour servir une page HTML avec les balises meta OpenGraph nécessaires aux aperçus sur les réseaux sociaux.
-*   **Frontend**:
-    *   Un nouveau composant  a été créé pour afficher la page de destination de la vidéo.
-    *   Le fichier principal  a été modifié pour détecter les URLs  et rendre le .
-    *   Une interface a été ajoutée au  pour permettre la création de ces liens média.
+-   **Stack Technique**: Frontend React (Create React App), Backend FastAPI (Python), et base de données MongoDB.
+-   **Backend ()**: Un fichier principal contenant toute la logique métier, y compris les API CRUD, l'envoi d'emails (Resend), l'intégration WhatsApp (Twilio), et la logique du Chat IA ().
+-   **Scheduler Autonome**: La logique de programmation des campagnes est désormais intégrée dans  et s'exécute en tant que thread d'arrière-plan (daemon) au démarrage du serveur. Il gère les erreurs de quota email et possède un endpoint de santé ().
+-   **Frontend ()**: Inclut un  monolithique (qui affiche l'état du scheduler) et un  pour l'interface du Chat IA.
 
 **Last working item**:
-*   **Last item agent was working:** Implémentation du nouveau système de Lecteur Média Unifié. L'agent a mis en place les fondations backend et frontend (modèles de données, API, routage, et le composant de base).
-*   **Status:** IN PROGRESS
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** both.
-    *   L'agent backend doit utiliser  pour valider les nouveaux endpoints (, ). Une attention particulière doit être portée au test de l'endpoint  avec un User-Agent WhatsApp pour vérifier que les balises OpenGraph sont bien retournées.
-    *   L'agent de test frontend doit valider le flux complet : création d'un lien média dans le dashboard coach, navigation vers l'URL générée, et affichage correct de la vidéo et du CTA dans le .
-*   **User Testing Done:** N
+-   **Last item agent was working:** L'agent a diagnostiqué pourquoi le Chat IA ne reconnaissait pas les produits (café congolais) dans les vidéos de l'utilisateur, malgré des tests backend réussis via . Le problème semble être une désynchronisation entre les tests de l'agent (backend uniquement) et l'environnement réel de l'utilisateur (frontend). L'agent a ajouté des logs de diagnostic () dans la route  de , redémarré le serveur, et a de nouveau validé via  que la logique de récupération des données depuis MongoDB fonctionnait correctement.
+-   **Status:** USER VERIFICATION PENDING
+-   **Agent Testing Done:** Y (Uniquement sur le backend avec . Le test frontend n'a pas été fait.)
+-   **Which testing method agent to use?** Frontend testing agent. La validation doit se faire en interagissant avec le  sur l'interface pour reproduire le scénario de l'utilisateur et confirmer que l'IA répond correctement. Un simple test  est insuffisant.
+-   **User Testing Done:** Y (Échec, confirmé par plusieurs enregistrements vidéo fournis par l'utilisateur).
 
 **All Pending/In progress Issue list**:
-*   **Issue 1: (P0) Finaliser et tester le système de Lecteur Média Unifié**
-    *   **Description:** Les bases du système sont posées, mais la fonctionnalité n'est pas complète. Il faut rendre l'interface de création de liens interactive, finaliser le composant d'affichage  et intégrer la génération de ces liens dans le processus d'envoi de campagnes.
+*   **Issue 1: (P0 - Bloquant) Le Chat IA est aveugle aux données du site dans l'interface utilisateur.**
+    *   **Description:** L'IA ne reconnaît pas les produits, articles ou cours lors des conversations via le widget de chat, même si les données existent dans la base de données MongoDB. L'utilisateur a fourni des vidéos le prouvant. Bien que le code backend semble correct et fonctionne lors des tests , le résultat n'est pas visible sur le frontend.
+    *   **Attempted fixes:** L'agent a modifié la route  dans  pour récupérer les offres, produits (), cours et articles de MongoDB et les injecter dans le prompt système de l'IA. Des logs de diagnostic ont été ajoutés pour prouver que les données sont bien lues côté backend.
     *   **Next debug checklist:**
-        1.  Dans , implémenter la gestion d'état () pour le formulaire de création de liens média.
-        2.  Connecter le formulaire à l'endpoint  pour créer les liens en base de données.
-        3.  Implémenter la récupération et l'affichage de la liste des liens existants via .
-        4.  Dans , implémenter la récupération des données du média via l'endpoint .
-        5.  Afficher dynamiquement la vidéo (via un  YouTube), l'image de couverture personnalisée, le titre, et le bouton CTA.
-        6.  Modifier la logique d'envoi des campagnes pour remplacer les URL brutes par les nouveaux liens courts générés.
-    *   **Why fix this issue and what will be achieved with the fix?** C'est la fonctionnalité principale demandée par l'utilisateur pour professionnaliser ses campagnes marketing et améliorer l'expérience utilisateur.
+        1.  Cesser de se fier aux tests . Le bug est dans l'interaction E2E (End-to-End).
+        2.  Utiliser un outil de test frontend pour interagir avec le  comme un utilisateur réel.
+        3.  Poser la question Vendez-vous du café ? dans le widget et vérifier la réponse de l'IA.
+        4.  Inspecter la console du navigateur (onglet Réseau) lors du test pour voir la requête exacte envoyée à  et la réponse reçue, afin de détecter d'éventuels problèmes de cache ou de payload.
+    *   **Why fix this issue and what will be achieved with the fix?** C'est la fonctionnalité critique demandée par l'utilisateur. La réparer rendra le Chat IA utile et dynamique.
     *   **Status:** IN PROGRESS
-    *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on other issue:** Non.
+    *   **Is recurring issue?** Y
+    *   **Should Test frontend/backend/both after fix?** Frontend
+    *   **Blocked on other issue:** Non
 
 **In progress Task List**:
-*   **Task 1: Compléter l'implémentation du Lecteur Média Unifié**
-    *   **Where to resume:** Le travail doit reprendre sur le fichier  pour rendre le formulaire de création de liens média fonctionnel. Ensuite, le composant  doit être complété pour récupérer et afficher les données du lien.
-    *   **What will be achieved with this?** Une solution complète pour créer, gérer et afficher des pages de destination vidéo brandées Afroboost.
-    *   **Status:** IN PROGRESS
-    *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on something:** Non.
+*   Aucune. Le focus est sur l'Issue 1.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P1: Proposer un refactoring de **: Bien que l'utilisateur ait refusé un refactoring global, la complexité de ce fichier (>6000 lignes) a été la source de nombreux bugs critiques (notamment le bouton d'envoi). Il est crucial de proposer une décomposition très ciblée et non-destructive (ex: extraire le  ou le  dans des composants dédiés) pour garantir la stabilité future.
+    *   **P1: Gérer les articles dans le Dashboard**: Créer une interface dans  pour permettre à l'utilisateur de créer, modifier et supprimer des articles (la collection  a été créée manuellement par l'agent).
+    *   **P1: Finaliser la configuration WhatsApp**: L'envoi de messages WhatsApp est bloqué car le numéro Twilio de l'utilisateur () n'est pas configuré comme un sender WhatsApp. L'agent doit guider l'utilisateur pour finaliser cette configuration dans sa console Twilio.
+    *   **P1: Valider l'export CSV**: La fonctionnalité d'export des contacts CRM existe mais n'a jamais été testée et validée par l'utilisateur.
 *   **Future Tasks:**
-    *   **P2: Export CSV des contacts CRM**: Le bouton Exporter en CSV a été ajouté à l'interface du CRM, mais la logique d'exportation doit être implémentée côté backend et connectée au frontend.
-    *   **P2: Mettre à jour le manuel utilisateur**: Le fichier  existe mais doit être mis à jour pour inclure les instructions sur le nouveau système de Lecteur Média Unifié.
+    *   **P2: Refactoring de **: Décomposer ce composant monolithique de plus de 6000 lignes.
+    *   **P2: Mettre à jour le manuel utilisateur**.
+    *   **P2: Ajouter un tableau de bord analytique**.
 
 **Completed work in this session**
--   **Système de Notifications Validé**: Le système de notifications push (Web Push API) et de backup par email (Resend) a été testé de bout en bout et confirmé comme fonctionnel avec la clé API réelle de l'utilisateur.
--   **Remplacement complet d'EmailJS**: Toute la logique d'envoi d'emails, y compris pour les campagnes marketing, a été migrée avec succès d'EmailJS vers Resend. Toutes les références à EmailJS ont été purgées du code.
--   **Correction du Bug Critique du Bouton d'Envoi**: Après de multiples tentatives infructueuses, le bug bloquant qui empêchait l'envoi de messages depuis le dashboard coach a été définitivement résolu. La cause () a été identifiée et corrigée.
--   **Mise en place de l'accès coach depuis le widget public**: La logique a été ajoutée pour que le coach, en s'identifiant avec son email () dans le widget public, accède à une interface de réponse directe.
--   **Correction des URLs**: Les URLs  ont été remplacées par  dans les templates d'email.
--   **Nettoyage du code**: Des déclarations de variables en double et des erreurs de compilation ont été corrigées.
+-   **Chat IA - Contexte Dynamique (Backend)**: La route  dans  a été modifiée pour injecter dynamiquement les offres, produits, cours et articles depuis MongoDB dans le prompt de l'IA.
+-   **Chat IA - CRM Automatique**: Une logique d'enregistrement/mise à jour automatique des contacts a été ajoutée à la route , avec une protection anti-doublon.
+-   **Scheduler - Mode Daemon**: Le scheduler est désormais un thread qui démarre automatiquement avec le serveur FastAPI, le rendant autonome.
+-   **Scheduler - Indicateur de Santé**: Un endpoint  a été créé et un badge de statut visuel a été ajouté au .
+-   **Scheduler - Reprise sur Quota**: La logique a été améliorée pour que les campagnes échouant à cause du quota Resend passent en statut  et soient retentées automatiquement, au lieu d'échouer définitivement.
 
 **Earlier issues found/mentioned but not fixed**
--   Aucun.
+-   **Issue 1: Configuration du canal WhatsApp sur Twilio.**
+    *   **Debug checklist:** L'agent doit rappeler à l'utilisateur que son numéro  doit être activé comme sender WhatsApp dans sa console Twilio pour que l'envoi de messages fonctionne.
+    *   **Why to solve this issue and what will be achieved with this?** Débloquera toutes les fonctionnalités liées à WhatsApp (campagnes et notifications).
+    *   **Should Test frontend/backend/both after fix:** Backend
+    *   **Is recurring issue?** Y
 
 **Known issue recurrence from previous fork**
--   **Bouton d'envoi du **: Ce problème a été extrêmement récurrent et difficile à résoudre, soulignant la fragilité du composant. Il est maintenant corrigé, mais toute modification dans ce fichier présente un risque élevé de régression.
+-   **Scheduler failing:** Le scheduler a été une source récurrente de problèmes. Il a été entièrement revu pour fonctionner comme un daemon intégré, ce qui devrait le stabiliser.
+    -   **Recurrence count:** 3+
+    -   **Status:** RESOLVED (mais reste une zone sensible).
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
--   **Dynamic OpenGraph Tags**: Le backend sert une page HTML dynamique avec des balises  pour garantir des aperçus riches sur WhatsApp/Email, une technique cruciale pour la nouvelle fonctionnalité.
--   **Manual Frontend Routing**: L'application n'utilise pas . Le routage est géré dans  en lisant , ce qui est un point clé à comprendre avant de modifier le frontend.
--   **Monolithic Component Risk**: Le fichier  est un monolithe de plus de 6000 lignes. C'est une source de risque technique majeure.
+-   **Stack**: React.js (JavaScript), FastAPI (Python), MongoDB.
+-   **Tâches de fond**: Scheduler implémenté avec  au démarrage de FastAPI.
+-   **Intégration IA**: Augmentation dynamique du prompt système avec des données de MongoDB avant l'appel à une API LLM (probablement OpenAI).
 
 **key DB schema**
--   ** (NEW)**: 
-
-**changes in tech stack**
--   EmailJS a été complètement retiré et remplacé par Resend.
+-   ****: 
+-   ****: 
+-   ****: 
+-   ****: 
+-   ****: 
 
 **All files of reference**
--   
--   
--   
--   
--   
-
-**Areas that need refactoring**:
--   ****: Ce fichier est une bombe à retardement technique. Une décomposition en sous-composants plus petits (ex: , , ) est la prochaine étape la plus critique pour la maintenabilité du projet, même si l'utilisateur est réticent.
-
-**key api endpoints**
--   : Crée un nouveau lien média.
--   : Récupère la liste des liens média.
--   : Récupère les détails d'un lien média spécifique.
--   : Sert la page HTML avec les balises OpenGraph pour les aperçus.
--   : Endpoint utilisé pour envoyer les campagnes marketing via Resend.
+-   : Fichier central pour le bug actuel. Contient la logique de la route .
+-   : Composant frontend où le bug se manifeste.
 
 **Critical Info for New Agent**
--   **Langue :** Répondez exclusivement en **Français**.
--   **Priorité Absolue :** La tâche immédiate et unique est de finaliser et tester le **système de Lecteur Média Unifié**.
--   **Risque Technique Majeur :** Le fichier  est extrêmement fragile. L'utilisateur a interdit un refactoring global. Toute modification doit être chirurgicale, localisée et prouvée comme étant non destructive.
--   **Contrainte de Test :** Le dashboard coach nécessite une authentification Google, rendant les tests d'interface automatisés impossibles pour cette partie. Validez la fonctionnalité via des tests API backend () et une vérification minutieuse du code frontend, puis fournissez des instructions claires à l'utilisateur pour le test manuel.
-
-**documents and test reports created in this job**
--   
--   
--   
+-   **Langue :** Répondez **exclusivement en Français**.
+-   **QUIPROQUO SUR LA STACK**: L'utilisateur est **persuadé** que le projet est en Next.js/Prisma. C'est **FAUX**. La stack est **React/FastAPI/MongoDB**. Ne vous laissez pas dérouter. Concentrez-vous sur la résolution des problèmes dans la stack existante.
+-   **PRIORITÉ P0**: Votre unique mission est de faire en sorte que le Chat IA reconnaisse les produits et articles dans l'**interface utilisateur réelle**. Les tests  sont insuffisants. Le succès sera validé par un test E2E sur le frontend.
+-   **WHATSAPP BLOQUÉ**: L'envoi de messages WhatsApp est actuellement impossible à cause d'un problème de configuration Twilio (). C'est un problème secondaire mais important à garder en tête.
 
 **Last 10 User Messages and any pending HUMAN messages**
-La séquence des messages montre un utilisateur validant le plan de l'agent pour le système de média unifié, en y ajoutant des exigences précises (thumbnail personnalisée, CTA, liens mémorables). L'agent a ensuite commencé l'implémentation. Il n'y a pas de message utilisateur en attente.
+10. **(Vidéo)** L'utilisateur prouve que l'IA ne voit pas le café congolais.
+9.  **(Requête)** L'utilisateur demande des modifications sur des fichiers Next.js/Prisma ().
+8.  **(Image)** L'utilisateur montre une capture d'écran de l'échec de l'IA.
+7.  **(Requête)** L'utilisateur demande à l'agent de corriger la récupération des données dans .
+6.  **(Bug)** L'utilisateur signale que l'IA est aveugle.
+5.  **(Requête)** L'utilisateur demande que l'IA ait une vision totale des données du site.
+4.  **(Requête)** L'utilisateur insiste à nouveau sur la stack Next.js/Prisma.
+3.  **(Bug)** L'utilisateur signale que l'IA ne voit pas les articles nouvellement créés.
+2.  **(Requête)** L'utilisateur demande à synchroniser l'IA avec la base de données.
+1.  **(Requête)** L'utilisateur demande la finalisation du flux email et l'ajout d'un indicateur de santé pour le scheduler.
 
 **Project Health Check:**
--   **Broken:** La fonctionnalité de Lecteur Média Unifié est en cours de développement et donc non fonctionnelle.
--   **Mocked:** Aucun.
+-   **Broken:** La fonctionnalité de Chat IA est cassée du point de vue de l'utilisateur, ce qui est la priorité actuelle. La fonctionnalité WhatsApp est bloquée par une configuration externe.
 
 **3rd Party Integrations**
--   **Resend:** Seul fournisseur pour l'envoi d'e-mails (notifications et campagnes).
--   **OpenAI:** Réponses de l'IA dans le chat.
--   **Stripe, PostHog, Twilio:** Utilisés pour les paiements, analytics et WhatsApp.
+-   **Resend**: Pour l'envoi d'emails.
+-   **Twilio**: Pour l'envoi de messages WhatsApp (actuellement non fonctionnel).
+-   **OpenAI (inféré)**: Pour le service de Chat IA.
 
 **Testing status**
--   **Testing agent used after significant changes:** Oui, pour valider le système de notifications.
--   **Test files created:** Aucun fichier de test persistant.
--   **Known regressions:** Le bug du bouton d'envoi dans  a été une régression majeure qui est maintenant résolue, mais sa complexité reste un risque.
-
-**Credentials to test flow:**
--   **Accès Coach/Admin :** Authentification Google avec .
--   **Resend API Key**: La clé est configurée dans .
+-   **Testing agent used after significant changes:** NO
+-   **Troubleshoot agent used after agent stuck in loop:** NO
+-   **Test files created:** []
+-   **Known regressions:** La fonctionnalité de Chat IA a régressé ou n'a jamais fonctionné correctement en production du point de vue de l'utilisateur.
 
 **What agent forgot to execute**
-L'agent a été interrompu en plein milieu de l'implémentation de la nouvelle fonctionnalité. Il n'a rien oublié, mais le travail est incomplet. Les prochaines étapes consisteront à finaliser la logique interactive du frontend et à tester le flux de bout en bout.</analysis>
+-   L'agent précédent n'a pas effectué de test End-to-End sur l'interface utilisateur pour valider la correction du Chat IA, se contentant de tests backend via . Cela a créé une divergence entre le succès perçu par l'agent et l'échec constaté par l'utilisateur.
+-   Le suivi du problème de configuration de Twilio pour WhatsApp n'a pas été mené à son terme.</analysis>

@@ -170,5 +170,5 @@ grep "Scheduler is alive" /var/log/supervisor/backend.out.log
 - **Coach Access**: 3 clics rapides sur "© Afroboost 2026" → Login Google OAuth
 - **Email autorisé**: contact.artboost@gmail.com
 - **Test Media Slug**: test-final
-- **URL de test**: https://video-landing-1.preview.emergentagent.com/v/test-final
+- **URL de test**: https://data-vision-ai-1.preview.emergentagent.com/v/test-final
 - **Vidéo Google Drive**: https://drive.google.com/file/d/1AkjHltEq-PAnw8OE-dR-lPPcpP44qvHv/view
