@@ -2127,60 +2127,85 @@ class SendWhatsAppRequest(BaseModel):
     message: str
     mediaUrl: str = None
 
-@api_router.post("/send-whatsapp")
-async def send_whatsapp_message(request: SendWhatsAppRequest):
+# ==================== FONCTION UTILITAIRE WHATSAPP ====================
+async def _get_twilio_config():
     """
-    Endpoint pour que l'agent IA puisse envoyer des WhatsApp
-    Utilise la config Twilio stockée en base
+    Récupère la configuration Twilio avec PRIORITÉ aux variables .env.
+    Ordre de priorité:
+    1. Variables d'environnement (.env) - PRODUCTION
+    2. Configuration en base de données - FALLBACK
+    
+    Retourne: (account_sid, auth_token, from_number) ou (None, None, None) si non configuré
+    """
+    # PRIORITÉ 1: Variables d'environnement (.env)
+    if TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_FROM_NUMBER:
+        logger.info(f"[WHATSAPP-PROD] ✅ Utilisation config .env - Numéro: {TWILIO_FROM_NUMBER}")
+        return TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_FROM_NUMBER
+    
+    # PRIORITÉ 2: Configuration en base de données (fallback)
+    whatsapp_config = await db.whatsapp_config.find_one({"id": "whatsapp_config"}, {"_id": 0})
+    if whatsapp_config:
+        account_sid = whatsapp_config.get("accountSid")
+        auth_token = whatsapp_config.get("authToken")
+        from_number = whatsapp_config.get("fromNumber")
+        
+        if account_sid and auth_token and from_number:
+            logger.info(f"[WHATSAPP-PROD] ⚠️ Utilisation config DB (fallback) - Numéro: {from_number}")
+            return account_sid, auth_token, from_number
+    
+    return None, None, None
+
+
+async def send_whatsapp_direct(to_phone: str, message: str, media_url: str = None) -> dict:
+    """
+    Fonction interne pour envoyer un message WhatsApp via Twilio.
+    Utilisée par l'endpoint /send-whatsapp et par /campaigns/{id}/launch.
+    
+    Args:
+        to_phone: Numéro de téléphone du destinataire
+        message: Corps du message
+        media_url: URL d'un média à joindre (optionnel)
+    
+    Returns:
+        dict avec status, sid (si succès), error (si échec)
     """
     import httpx
     
-    # Récupérer la config WhatsApp/Twilio
-    whatsapp_config = await db.whatsapp_config.find_one({"id": "whatsapp_config"}, {"_id": 0})
-    
-    if not whatsapp_config:
-        logger.warning("WhatsApp config not found - simulation mode")
-        return {
-            "status": "simulated",
-            "message": f"WhatsApp prêt pour: {request.to}",
-            "simulated": True
-        }
-    
-    account_sid = whatsapp_config.get("accountSid")
-    auth_token = whatsapp_config.get("authToken")
-    from_number = whatsapp_config.get("fromNumber")
+    # Récupérer la config Twilio (priorité .env)
+    account_sid, auth_token, from_number = await _get_twilio_config()
     
     if not account_sid or not auth_token or not from_number:
-        logger.warning("Twilio config incomplete - simulation mode")
+        logger.warning("[WHATSAPP-PROD] ❌ Configuration Twilio manquante - mode simulation")
         return {
             "status": "simulated",
-            "message": f"WhatsApp simulé pour: {request.to}",
+            "message": f"WhatsApp simulé pour: {to_phone}",
             "simulated": True
         }
     
-    # Formater le numéro
-    to_phone = request.to.replace(" ", "").replace("-", "")
-    if not to_phone.startswith("+"):
-        to_phone = "+41" + to_phone.lstrip("0") if to_phone.startswith("0") else "+" + to_phone
+    # Formater le numéro destinataire
+    clean_to = to_phone.replace(" ", "").replace("-", "")
+    if not clean_to.startswith("+"):
+        clean_to = "+41" + clean_to.lstrip("0") if clean_to.startswith("0") else "+" + clean_to
     
-    from_phone = from_number if from_number.startswith("+") else "+" + from_number
+    # Formater le numéro expéditeur
+    clean_from = from_number if from_number.startswith("+") else "+" + from_number
     
     # Construire la requête Twilio
     twilio_url = f"https://api.twilio.com/2010-04-01/Accounts/{account_sid}/Messages.json"
     
     data = {
-        "From": f"whatsapp:{from_phone}",
-        "To": f"whatsapp:{to_phone}",
-        "Body": request.message
+        "From": f"whatsapp:{clean_from}",
+        "To": f"whatsapp:{clean_to}",
+        "Body": message
     }
     
-    if request.mediaUrl:
-        data["MediaUrl"] = request.mediaUrl
+    if media_url:
+        data["MediaUrl"] = media_url
     
-    logger.info(f"IA : Envoi WhatsApp vers {to_phone}")
+    logger.info(f"[WHATSAPP-PROD] 📤 Envoi via {clean_from} vers {clean_to}")
     
     try:
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
                 twilio_url,
                 data=data,
@@ -2190,21 +2215,39 @@ async def send_whatsapp_message(request: SendWhatsAppRequest):
             result = response.json()
             
             if response.status_code >= 400:
-                logger.error(f"Twilio error: {result}")
-                return {"status": "error", "error": result.get("message", "Unknown error")}
+                error_msg = result.get("message", "Unknown error")
+                logger.error(f"[WHATSAPP-PROD] ❌ Erreur Twilio: {error_msg}")
+                print(f"[WHATSAPP-PROD] Message envoyé via {clean_from} vers {clean_to} - Status: ERROR ({error_msg})")
+                return {"status": "error", "error": error_msg}
             
-            logger.info(f"IA : Message WhatsApp envoyé - SID: {result.get('sid')}")
-            print("IA : Message envoyé via WhatsApp (Twilio)")
+            sid = result.get("sid", "")
+            logger.info(f"[WHATSAPP-PROD] ✅ Message envoyé - SID: {sid}")
+            print(f"[WHATSAPP-PROD] Message envoyé via {clean_from} vers {clean_to} - Status: SUCCESS (SID: {sid})")
             
             return {
                 "status": "success",
-                "sid": result.get("sid"),
-                "to": to_phone
+                "sid": sid,
+                "to": clean_to,
+                "from": clean_from
             }
             
     except Exception as e:
-        logger.error(f"WhatsApp send error: {str(e)}")
+        logger.error(f"[WHATSAPP-PROD] ❌ Exception: {str(e)}")
+        print(f"[WHATSAPP-PROD] Message envoyé via {clean_from} vers {clean_to} - Status: ERROR ({str(e)})")
         return {"status": "error", "error": str(e)}
+
+
+@api_router.post("/send-whatsapp")
+async def send_whatsapp_message(request: SendWhatsAppRequest):
+    """
+    Endpoint pour envoyer un message WhatsApp.
+    Utilise la config Twilio avec PRIORITÉ aux variables .env.
+    """
+    return await send_whatsapp_direct(
+        to_phone=request.to,
+        message=request.message,
+        media_url=request.mediaUrl
+    )
 
 # --- Endpoint pour tester l'IA manuellement ---
 @api_router.post("/ai-test")
