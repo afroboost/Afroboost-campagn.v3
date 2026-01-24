@@ -2574,8 +2574,8 @@ async def chat_with_ai(data: ChatMessage):
     
     # === 3. CONSTRUIRE LE CONTEXTE DYNAMIQUE (VISION TOTALE DU SITE) ===
     context = "\n\n========== CONNAISSANCES DU SITE AFROBOOST ==========\n"
-    context += "Utilise EXCLUSIVEMENT ces informations pour répondre sur les cours, offres et articles.\n"
-    context += "Si une nouveauté est présente, mets-la en avant !\n"
+    context += "Utilise EXCLUSIVEMENT ces informations pour répondre sur les produits, cours, offres et articles.\n"
+    context += "IMPORTANT: Vérifie TOUJOURS l'INVENTAIRE BOUTIQUE avant de dire qu'un produit n'existe pas !\n"
     
     # Prénom du client
     if first_name:
@@ -2589,28 +2589,60 @@ async def chat_with_ai(data: ChatMessage):
     except Exception as e:
         logger.warning(f"[CHAT-IA] Erreur récupération concept: {e}")
     
-    # === SECTION 1: OFFRES ET TARIFS ===
+    # === SECTION 1: INVENTAIRE BOUTIQUE (PRODUITS PHYSIQUES) ===
     try:
-        offers = await db.offers.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(20)
-        if offers:
-            context += "\n\n💰 OFFRES ET TARIFS ACTUELS:\n"
-            for o in offers[:10]:  # Max 10 offres
-                name = o.get('name', 'Offre')
-                price = o.get('price', 0)
-                desc = o.get('description', '')[:100] if o.get('description') else ''
-                validity = o.get('validity', '')
+        # Récupérer TOUS les éléments de la collection offers
+        all_offers = await db.offers.find({"visible": {"$ne": False}}, {"_id": 0}).to_list(50)
+        
+        # LOG DE DIAGNOSTIC
+        logger.info(f"[CHAT-IA] 📦 Récupération offres: {len(all_offers)} trouvées")
+        for o in all_offers:
+            logger.info(f"[CHAT-IA]   - {o.get('name')}: {o.get('price')} CHF (isProduct: {o.get('isProduct', False)})")
+        
+        # Séparer les PRODUITS des SERVICES
+        products = [o for o in all_offers if o.get('isProduct') == True]
+        services = [o for o in all_offers if not o.get('isProduct')]
+        
+        # === PRODUITS BOUTIQUE (café, vêtements, accessoires...) ===
+        if products:
+            context += "\n\n🛒 INVENTAIRE BOUTIQUE (Produits en vente):\n"
+            for p in products[:15]:  # Max 15 produits
+                name = p.get('name', 'Produit')
+                price = p.get('price', 0)
+                desc = p.get('description', '')[:150] if p.get('description') else ''
+                category = p.get('category', '')
+                stock = p.get('stock', -1)
+                
+                context += f"  ★ {name.upper()} : {price} CHF"
+                if category:
+                    context += f" (Catégorie: {category})"
+                if stock > 0:
+                    context += f" - En stock: {stock}"
+                context += "\n"
+                if desc:
+                    context += f"    Description: {desc}\n"
+            context += "  → Si un client demande un de ces produits, CONFIRME qu'il est disponible !\n"
+        else:
+            context += "\n\n🛒 INVENTAIRE BOUTIQUE: Aucun produit en vente actuellement.\n"
+        
+        # === SERVICES ET OFFRES (abonnements, cours à l'unité...) ===
+        if services:
+            context += "\n\n💰 OFFRES ET TARIFS (Services):\n"
+            for s in services[:10]:
+                name = s.get('name', 'Offre')
+                price = s.get('price', 0)
+                desc = s.get('description', '')[:100] if s.get('description') else ''
                 
                 context += f"  • {name} : {price} CHF"
                 if desc:
                     context += f" - {desc}"
-                if validity:
-                    context += f" (Validité: {validity})"
                 context += "\n"
         else:
-            context += "\n\n💰 OFFRES: Aucune offre spéciale actuellement. Invite le client à contacter le coach.\n"
+            context += "\n\n💰 OFFRES: Aucune offre spéciale actuellement.\n"
+            
     except Exception as e:
-        logger.warning(f"[CHAT-IA] Erreur récupération offres: {e}")
-        context += "\n\n💰 OFFRES: Informations temporairement indisponibles.\n"
+        logger.error(f"[CHAT-IA] ❌ Erreur récupération offres/produits: {e}")
+        context += "\n\n🛒 BOUTIQUE: Informations temporairement indisponibles.\n"
     
     # === SECTION 2: COURS DISPONIBLES ===
     try:
