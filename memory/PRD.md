@@ -219,6 +219,16 @@ Application de réservation de casques audio pour des cours de fitness Afroboost
   - `deleteChatSession()` avec confirmation (suppression logique)
   - `deleteChatParticipant()` avec confirmation (suppression définitive)
   - Tous les boutons 🗑️ fonctionnels avec data-testid
+
+- [x] **Optimisation UI Responsive** (24 Jan 2026) - NOUVEAU ✅
+  - Scroll interne pour Offres (max-height: 500px)
+  - Scroll interne pour Médias (max-height: 500px)
+  - Scroll interne pour Codes Promo (max-height: 400px)
+  - Recherche locale pour Offres (filtrage instantané)
+  - Recherche locale pour Codes Promo (filtrage instantané)
+  - Layout Campagnes responsive (flex-col sur mobile)
+  - Boutons pleine largeur sur mobile
+
 - [x] **Fix Permissions Notifications** (24 Jan 2026) - NOUVEAU ✅
   - Banner de demande de permission au premier accès à l'onglet Conversations
   - Fallback Toast interne si notifications browser bloquées
