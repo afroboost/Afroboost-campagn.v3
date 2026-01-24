@@ -1036,7 +1036,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const [aiTestResponse, setAiTestResponse] = useState(null);
   const [aiTestLoading, setAiTestLoading] = useState(false);
 
-  // === CONVERSATIONS STATE ===
+  // === CONVERSATIONS STATE (CRM AVANCÉ) ===
   const [chatSessions, setChatSessions] = useState([]);
   const [chatParticipants, setChatParticipants] = useState([]);
   const [chatLinks, setChatLinks] = useState([]);
@@ -1047,6 +1047,15 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState(null);
   const [conversationSearch, setConversationSearch] = useState(''); // Recherche globale conversations
+  
+  // === CRM AVANCÉ - Pagination et Infinite Scroll ===
+  const [conversationsPage, setConversationsPage] = useState(1);
+  const [conversationsTotal, setConversationsTotal] = useState(0);
+  const [conversationsHasMore, setConversationsHasMore] = useState(false);
+  const [conversationsLoading, setConversationsLoading] = useState(false);
+  const [enrichedConversations, setEnrichedConversations] = useState([]);
+  const conversationsListRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   // Add schedule slot
   const addScheduleSlot = () => {
