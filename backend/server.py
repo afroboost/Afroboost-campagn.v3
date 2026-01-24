@@ -4484,7 +4484,7 @@ async def get_dynamic_manifest():
 
 # ==================== SCHEDULER INTÉGRÉ (THREAD AUTOMATIQUE) ====================
 # Le scheduler tourne en arrière-plan dès le démarrage du serveur
-# Il vérifie les campagnes programmées toutes les 30 secondes
+# Il vérifie les campagnes programmées toutes les 10 secondes
 
 import threading
 import time as time_module
@@ -4493,7 +4493,7 @@ from datetime import datetime, timezone, timedelta
 # Variable globale pour contrôler le scheduler
 SCHEDULER_RUNNING = False
 SCHEDULER_LAST_HEARTBEAT = None
-SCHEDULER_INTERVAL = 30  # secondes
+SCHEDULER_INTERVAL = 10  # secondes - Heartbeat toutes les 10s
 
 def parse_campaign_date(date_str):
     """Parse une date ISO et la convertit en datetime UTC."""
