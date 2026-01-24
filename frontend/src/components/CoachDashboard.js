@@ -5024,8 +5024,13 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
               </button>
             </form>
 
-            <div className="space-y-2">
-              {discountCodes.map(code => (
+            {/* Liste des codes promo avec scroll */}
+            <div style={{ maxHeight: '400px', overflowY: 'auto', overflowX: 'hidden' }}>
+              <div className="space-y-2">
+                {(codesSearch ? discountCodes.filter(c => 
+                  c.code?.toLowerCase().includes(codesSearch.toLowerCase()) ||
+                  c.assignedEmails?.some(e => e.toLowerCase().includes(codesSearch.toLowerCase()))
+                ) : discountCodes).map(code => (
                 <div key={code.id} className="p-4 rounded-lg glass">
                   {/* Mode édition pour ce code */}
                   {editingCode?.id === code.id ? (
