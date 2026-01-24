@@ -3175,18 +3175,22 @@ async def soft_delete_message(message_id: str):
 @api_router.get("/notifications/unread")
 async def get_unread_notifications(
     target: str = "coach",  # "coach" ou "client"
-    session_id: Optional[str] = None
+    session_id: Optional[str] = None,
+    include_ai: bool = False  # Inclure les réponses IA dans les notifications coach
 ):
     """
     Récupère les messages non notifiés pour le coach ou un client.
+    Optimisé pour le polling toutes les 10 secondes.
     
     Paramètres:
-    - target: "coach" pour tous les messages user non notifiés, "client" pour les réponses
-    - session_id: Optionnel, pour filtrer par session (utile côté client)
+    - target: "coach" pour les messages user, "client" pour les réponses AI/coach
+    - session_id: Optionnel, filtrer par session
+    - include_ai: Si true et target=coach, inclut aussi les réponses IA (pour suivi)
     
     Retourne:
     - count: Nombre de messages non notifiés
-    - messages: Liste des messages non notifiés (max 20)
+    - messages: Liste des messages (max 10, triés par date décroissante)
+    - target: Target demandé
     """
     query = {
         "is_deleted": {"$ne": True},
@@ -3194,8 +3198,12 @@ async def get_unread_notifications(
     }
     
     if target == "coach":
-        # Messages des utilisateurs destinés au coach
-        query["sender_type"] = "user"
+        if include_ai:
+            # Messages utilisateurs + réponses IA (pour suivi)
+            query["sender_type"] = {"$in": ["user", "ai"]}
+        else:
+            # Seulement messages des utilisateurs
+            query["sender_type"] = "user"
     else:
         # Messages de l'IA ou du coach destinés aux clients
         query["sender_type"] = {"$in": ["ai", "coach"]}
@@ -3203,14 +3211,14 @@ async def get_unread_notifications(
     if session_id:
         query["session_id"] = session_id
     
-    # Compter le nombre total
+    # Compter le nombre total (limité pour performance)
     count = await db.chat_messages.count_documents(query)
     
-    # Récupérer les derniers messages non notifiés (max 20)
+    # Récupérer les messages non notifiés les plus récents (max 10 pour performance)
     messages = await db.chat_messages.find(
         query, 
-        {"_id": 0}
-    ).sort("created_at", -1).limit(20).to_list(20)
+        {"_id": 0, "id": 1, "session_id": 1, "sender_name": 1, "sender_type": 1, "content": 1, "created_at": 1}
+    ).sort("created_at", -1).limit(10).to_list(10)
     
     return {
         "count": count,
