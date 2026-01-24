@@ -2885,6 +2885,150 @@ async def get_chat_sessions(include_deleted: bool = False):
     sessions = await db.chat_sessions.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
     return sessions
 
+# ==================== CRM AVANCÉ - HISTORIQUE CONVERSATIONS ====================
+@api_router.get("/conversations")
+async def get_conversations_advanced(
+    page: int = 1,
+    limit: int = 20,
+    query: str = "",
+    include_deleted: bool = False
+):
+    """
+    Endpoint CRM avancé pour les conversations avec pagination et recherche.
+    
+    Paramètres:
+    - page: Numéro de page (commence à 1)
+    - limit: Nombre d'éléments par page (max 100)
+    - query: Recherche dans les noms de participants, emails, contenus de messages
+    - include_deleted: Inclure les sessions supprimées
+    
+    Retourne:
+    - conversations: Liste des conversations enrichies avec dernier message et date
+    - total: Nombre total de conversations
+    - page: Page actuelle
+    - pages: Nombre total de pages
+    - has_more: Indique s'il y a plus de pages
+    """
+    import re
+    
+    # Limiter à 100 max
+    limit = min(limit, 100)
+    skip = (page - 1) * limit
+    
+    # Query de base pour les sessions
+    base_query = {} if include_deleted else {"is_deleted": {"$ne": True}}
+    
+    # Si recherche, d'abord trouver les participants correspondants
+    matching_participant_ids = []
+    matching_session_ids = []
+    
+    if query and query.strip():
+        search_regex = {"$regex": re.escape(query), "$options": "i"}
+        
+        # Rechercher dans les participants
+        matching_participants = await db.chat_participants.find({
+            "$or": [
+                {"name": search_regex},
+                {"email": search_regex},
+                {"whatsapp": search_regex}
+            ]
+        }, {"_id": 0, "id": 1}).to_list(500)
+        matching_participant_ids = [p["id"] for p in matching_participants]
+        
+        # Rechercher dans les messages
+        matching_messages = await db.chat_messages.find({
+            "content": search_regex,
+            "is_deleted": {"$ne": True}
+        }, {"_id": 0, "session_id": 1}).to_list(500)
+        matching_session_ids = list(set([m["session_id"] for m in matching_messages]))
+        
+        # Rechercher dans les titres de session
+        title_sessions = await db.chat_sessions.find({
+            "title": search_regex,
+            **base_query
+        }, {"_id": 0, "id": 1}).to_list(500)
+        matching_session_ids.extend([s["id"] for s in title_sessions])
+        matching_session_ids = list(set(matching_session_ids))
+        
+        # Construire la query finale
+        if matching_participant_ids or matching_session_ids:
+            base_query["$or"] = []
+            if matching_participant_ids:
+                base_query["$or"].append({"participant_ids": {"$in": matching_participant_ids}})
+            if matching_session_ids:
+                base_query["$or"].append({"id": {"$in": matching_session_ids}})
+        else:
+            # Aucun résultat
+            return {
+                "conversations": [],
+                "total": 0,
+                "page": page,
+                "pages": 0,
+                "has_more": False
+            }
+    
+    # Compter le total
+    total = await db.chat_sessions.count_documents(base_query)
+    pages = (total + limit - 1) // limit
+    
+    # Récupérer les sessions paginées
+    sessions = await db.chat_sessions.find(
+        base_query, 
+        {"_id": 0}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    # Enrichir chaque session avec le dernier message et les infos participant
+    enriched_conversations = []
+    
+    for session in sessions:
+        # Récupérer le dernier message
+        last_message = await db.chat_messages.find_one(
+            {"session_id": session["id"], "is_deleted": {"$ne": True}},
+            {"_id": 0},
+            sort=[("created_at", -1)]
+        )
+        
+        # Récupérer les infos des participants
+        participants_info = []
+        for pid in session.get("participant_ids", []):
+            participant = await db.chat_participants.find_one({"id": pid}, {"_id": 0})
+            if participant:
+                participants_info.append({
+                    "id": participant.get("id"),
+                    "name": participant.get("name", "Inconnu"),
+                    "email": participant.get("email", ""),
+                    "whatsapp": participant.get("whatsapp", ""),
+                    "source": participant.get("source", "")
+                })
+        
+        # Compter le nombre de messages
+        message_count = await db.chat_messages.count_documents({
+            "session_id": session["id"],
+            "is_deleted": {"$ne": True}
+        })
+        
+        enriched_conversations.append({
+            **session,
+            "participants": participants_info,
+            "last_message": {
+                "content": last_message.get("content", "")[:100] if last_message else "",
+                "sender_name": last_message.get("sender_name", "") if last_message else "",
+                "sender_type": last_message.get("sender_type", "") if last_message else "",
+                "created_at": last_message.get("created_at", "") if last_message else ""
+            } if last_message else None,
+            "message_count": message_count
+        })
+    
+    logger.info(f"[CRM] Conversations: page={page}, limit={limit}, query='{query}', total={total}")
+    
+    return {
+        "conversations": enriched_conversations,
+        "total": total,
+        "page": page,
+        "pages": pages,
+        "has_more": page < pages
+    }
+
 @api_router.get("/chat/sessions/{session_id}")
 async def get_chat_session(session_id: str):
     """Récupère une session par son ID"""
