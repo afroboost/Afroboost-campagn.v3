@@ -1709,30 +1709,41 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const checkUnreadNotifications = useCallback(async () => {
     if (tab !== 'conversations') return;
     
+    console.log('NOTIF_DEBUG: Polling démarré...');
+    
     try {
       const res = await axios.get(`${API}/notifications/unread`, {
         params: { target: 'coach' }
       });
       
       const { count, messages } = res.data;
+      console.log(`NOTIF_DEBUG: ${count} messages non lus, ${messages?.length || 0} à traiter`);
       setUnreadCount(count);
       
       if (messages && messages.length > 0) {
         // Filtrer les messages déjà notifiés localement
         const newMessages = messages.filter(m => !lastNotifiedIdsRef.current.has(m.id));
+        console.log(`NOTIF_DEBUG: ${newMessages.length} NOUVEAUX messages détectés`);
         
         if (newMessages.length > 0) {
+          console.log('NOTIF_DEBUG: ⚡ Nouveaux messages! Tentative notification...');
+          
           // Importer les fonctions de notification
           const { playNotificationSound, showBrowserNotification, getNotificationPermissionStatus } = await import('../services/notificationService');
           
-          // Jouer le son pour le premier nouveau message
+          // Jouer le son
+          console.log('NOTIF_DEBUG: Jouer son...');
           await playNotificationSound('user');
+          console.log('NOTIF_DEBUG: Son joué ✅');
           
           // Vérifier la permission actuelle
           const currentPermission = getNotificationPermissionStatus();
+          console.log('NOTIF_DEBUG: Permission actuelle:', currentPermission);
           
           // Afficher une notification pour chaque nouveau message (max 3)
           for (const msg of newMessages.slice(0, 3)) {
+            console.log(`NOTIF_DEBUG: Traitement message de ${msg.sender_name}...`);
+            
             // Essayer d'afficher une notification browser
             const result = await showBrowserNotification(
               '💬 Nouveau message - Afroboost',
@@ -1750,9 +1761,14 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
               }
             );
             
+            console.log('NOTIF_DEBUG: Résultat notification:', result);
+            
             // Si la notification browser a échoué, utiliser le fallback toast
             if (result.fallbackNeeded) {
+              console.log('NOTIF_DEBUG: Fallback TOAST activé!');
               addToastNotification(msg);
+            } else {
+              console.log('NOTIF_DEBUG: Notification browser envoyée ✅');
             }
             
             // Ajouter à la liste des messages notifiés localement
