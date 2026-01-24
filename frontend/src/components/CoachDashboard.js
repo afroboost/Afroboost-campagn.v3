@@ -5206,8 +5206,12 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
                   )}
                 </div>
               ))}
-              {discountCodes.length === 0 && <p className="text-center py-8 text-white opacity-50">{t('noPromoCode')}</p>}
-            </div>
+              {(codesSearch ? discountCodes.filter(c => 
+                c.code?.toLowerCase().includes(codesSearch.toLowerCase()) ||
+                c.assignedEmails?.some(e => e.toLowerCase().includes(codesSearch.toLowerCase()))
+              ) : discountCodes).length === 0 && <p className="text-center py-8 text-white opacity-50">{codesSearch ? 'Aucun code trouvé' : t('noPromoCode')}</p>}
+              </div>
+            </div>{/* Fin conteneur scrollable codes */}
           </div>
         )}
 
