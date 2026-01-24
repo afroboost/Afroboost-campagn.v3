@@ -487,6 +487,9 @@ class ChatMessage(BaseModel):
     message: str
     leadId: str = ""
     firstName: str = ""
+    email: str = ""  # Email pour CRM auto-save
+    whatsapp: str = ""  # WhatsApp pour CRM auto-save
+    source: str = "chat_ia"  # Source du contact (lien chat IA)
 
 # ==================== SYSTÈME DE CHAT AMÉLIORÉ ====================
 # Modèles pour la reconnaissance des utilisateurs, sessions et modes de conversation
