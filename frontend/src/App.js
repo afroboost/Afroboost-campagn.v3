@@ -1924,8 +1924,8 @@ function App() {
   const [lang, setLang] = useState(localStorage.getItem("af_lang") || "fr");
   const [showSplash, setShowSplash] = useState(true);
   const [showCoachLogin, setShowCoachLogin] = useState(false);
-  const [coachMode, setCoachMode] = useState(false);
-  const [coachUser, setCoachUser] = useState(null); // Utilisateur connecté via Google OAuth
+  const [coachMode, setCoachMode] = useState(true); // TEMP: Testing mode
+  const [coachUser, setCoachUser] = useState({name: 'Test Coach'}); // TEMP: Testing
   const [validationCode, setValidationCode] = useState(null); // For /validate/:code URL
 
   const [courses, setCourses] = useState([]);
