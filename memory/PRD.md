@@ -1,5 +1,28 @@
 # Afroboost - Document de Référence Produit (PRD)
 
+## Mise à jour du 28 Janvier 2026 - Sécurisation IA et Campaign Prompt
+
+### Nouvelles fonctionnalités :
+- **Campaign Prompt PRIORITAIRE** : Nouveau champ `campaignPrompt` dans la config IA
+  - Placé à la FIN du contexte avec encadrement "CONTEXTE PRIORITAIRE ET OBLIGATOIRE"
+  - Écrase les règles par défaut si défini (ex: "Réponds en majuscules")
+  - Configurable dans Dashboard > Conversations > Agent IA
+  - data-testid: `campaign-prompt-input`
+
+- **Restriction HORS-SUJET** : L'IA refuse les questions non liées aux produits/cours/offres
+  - Réponse automatique: "Désolé, je suis uniquement programmé pour vous assister sur nos offres et formations. 🙏"
+  - Exemples refusés: cuisine, politique, météo, conseils généraux
+
+- **Protection des codes promo** : Les codes textuels ne sont JAMAIS transmis à l'IA
+  - L'IA ne peut pas inventer ni révéler de codes promotionnels
+  - Section "PROMOS SPÉCIALES" supprimée du contexte IA
+
+### Fichiers modifiés :
+- `/app/backend/server.py` : Modèle `AIConfig` + endpoints `/api/chat` et `/api/chat/ai-response`
+- `/app/frontend/src/components/CoachDashboard.js` : Nouveau champ textarea pour `campaignPrompt`
+
+---
+
 ## Mise à jour du 26 Janvier 2025 - Widget Chat Mobile
 
 ### Modifications apportées :
