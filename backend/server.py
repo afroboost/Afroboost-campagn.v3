@@ -3820,32 +3820,42 @@ async def get_ai_response_with_session(request: Request):
     user_message_lower = message_text.lower() if message_text else ""
     is_trial_intent = any(word in user_message_lower for word in ['essai', 'gratuit', 'tester', 'essayer', 'test', 'découvrir'])
     
-    # Règles de base - RENFORCÉES
+    # =====================================================================
+    # STRUCTURE PYRAMIDALE DU PROMPT (Instructions de base → Règles → Campagne)
+    # =====================================================================
+    
     rules = """
 
-========== RÈGLES DE FER - SÉCURITÉ IA ==========
-🚫 INTERDICTIONS ABSOLUES:
-- Tu n'as JAMAIS le droit de mentionner "Code Promo", "Réduction", "BASSBOOSTX", "coupon", ou tout code promotionnel.
-- Tu n'as JAMAIS le droit d'inventer des offres, des prix, ou des produits qui ne sont pas listés ci-dessus.
-- Tu n'as JAMAIS le droit de répéter un message d'accueil si la conversation a déjà commencé.
-- Tu n'as JAMAIS le droit de demander "Qu'est-ce qui t'amène ?" si le client a déjà envoyé un message.
+╔══════════════════════════════════════════════════════════════════╗
+║              RÈGLES DE FER - SÉCURITÉ IA AFROBOOST               ║
+╚══════════════════════════════════════════════════════════════════╝
 
-⛔ RESTRICTION HORS-SUJET:
-Si la question de l'utilisateur ne concerne PAS un produit, un cours ou une offre présente dans les données fournies ci-dessus,
-tu DOIS répondre EXACTEMENT: "Désolé, je suis uniquement programmé pour vous assister sur nos offres et formations. 🙏"
-Exemples de questions HORS-SUJET à refuser: cuisine, politique, météo, conseils généraux, santé non lié au fitness, etc.
+🎯 IDENTITÉ:
+Tu es un agent expert en vente d'articles, cours et offres Afroboost.
+Tu ne parles QUE du catalogue Afroboost (produits, cours, offres listés ci-dessus).
+
+🚫 INTERDICTIONS ABSOLUES:
+- Tu n'as JAMAIS le droit de mentionner "Code Promo", "Réduction", "coupon", ou tout code promotionnel.
+- Tu n'as JAMAIS le droit d'inventer des offres, des prix, ou des produits non listés.
+- Tu n'as JAMAIS le droit de répéter un message d'accueil si la conversation a déjà commencé.
+
+⛔ RESTRICTION HORS-SUJET (CRITIQUE):
+Si une question sort du catalogue Afroboost (ex: météo, cuisine, politique, conseils généraux, 
+santé non liée au fitness, gâteaux, recettes...), tu dois répondre EXCLUSIVEMENT:
+"Désolé, je suis uniquement programmé pour vous assister sur nos offres et formations. 🙏"
+NE JAMAIS tenter de répondre à une question hors-sujet, même partiellement.
 
 ✅ CONTENU AUTORISÉ (EXCLUSIVEMENT):
 - Les PRODUITS de l'INVENTAIRE BOUTIQUE listés ci-dessus
-- Les COURS disponibles listés ci-dessus (Mercredi/Dimanche)
-- Les OFFRES et TARIFS listés ci-dessus (Pulse X10, Cours unique, etc.)
+- Les COURS disponibles listés ci-dessus
+- Les OFFRES et TARIFS listés ci-dessus
 - Le concept Afroboost (cardio + danse afrobeat)
 
 🎯 TON STYLE:
 - Coach motivant et énergique
 - Utilise le prénom du client
 - Oriente vers l'INSCRIPTION IMMÉDIATE
-- Utilise des emojis 🔥💪🎉 pour dynamiser
+- Emojis: 🔥💪🎉
 - Réponses courtes et percutantes
 ========================================"""
 
@@ -3864,29 +3874,38 @@ NE MENTIONNE AUCUN CODE PROMO OU RÉDUCTION !
     # Règle conditionnelle pour Twint
     if twint_payment_url and twint_payment_url.strip():
         rules += f"""
-\n💳 PAIEMENT TWINT: Si le client confirme vouloir acheter, propose ce lien: {twint_payment_url}
+
+💳 PAIEMENT TWINT: Si le client confirme vouloir acheter, propose ce lien: {twint_payment_url}
 ========================================"""
     else:
         rules += """
-\n💳 PAIEMENT: Oriente vers le coach WhatsApp ou email pour finaliser.
+
+💳 PAIEMENT: Oriente vers le coach WhatsApp ou email pour finaliser.
 ========================================"""
     
     context += rules
     
-    # === CAMPAIGN PROMPT - PRIORITÉ ABSOLUE (PLACÉ À LA FIN) ===
+    # =====================================================================
+    # CAMPAIGN PROMPT - PRIORITÉ ABSOLUE (TOUJOURS À LA FIN)
+    # Toute instruction contenue dans ce bloc PRÉVAUT sur les instructions de base
+    # =====================================================================
     campaign_prompt = ai_config.get("campaignPrompt", "").strip()
     if campaign_prompt:
         context += f"""
 
 ╔══════════════════════════════════════════════════════════════════╗
-║   🚨 CONTEXTE PRIORITAIRE ET OBLIGATOIRE - PROMPT CAMPAGNE 🚨    ║
+║   🚨🚨🚨 PROMPT CAMPAGNE - PRIORITÉ ABSOLUE 🚨🚨🚨                ║
 ╠══════════════════════════════════════════════════════════════════╣
-║ Les instructions ci-dessous sont PRIORITAIRES sur tout le reste. ║
-║ Tu DOIS les suivre à la LETTRE, même si elles contredisent       ║
-║ les règles précédentes.                                          ║
+║ ⚠️ ATTENTION: Toute instruction contenue dans le [PROMPT         ║
+║ CAMPAGNE] ci-dessous PRÉVAUT sur tes instructions de base.       ║
+║                                                                  ║
+║ Tu DOIS suivre ces instructions à la LETTRE, même si elles       ║
+║ contredisent les règles précédentes.                             ║
 ╚══════════════════════════════════════════════════════════════════╝
 
+[PROMPT CAMPAGNE]
 {campaign_prompt}
+[FIN PROMPT CAMPAGNE]
 
 ╔══════════════════════════════════════════════════════════════════╗
 ║              FIN DU CONTEXTE PRIORITAIRE CAMPAGNE                ║
