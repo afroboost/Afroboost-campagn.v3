@@ -1068,6 +1068,7 @@ const CoachDashboard = ({ t, lang, onBack, onLogout, coachUser }) => {
   const [coachMessage, setCoachMessage] = useState('');
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkCustomPrompt, setNewLinkCustomPrompt] = useState('');  // Prompt spécifique au lien
+  const [newCommunityName, setNewCommunityName] = useState('');  // Nom pour le chat communautaire
   const [loadingConversations, setLoadingConversations] = useState(false);
   const [copiedLinkId, setCopiedLinkId] = useState(null);
   const [conversationSearch, setConversationSearch] = useState(''); // Recherche globale conversations
