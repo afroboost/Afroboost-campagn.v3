@@ -2777,33 +2777,33 @@ async def chat_with_ai(data: ChatMessage):
                         # Seuls 'type' et 'value' sont utilisés pour le calcul
                         promo_type = promo.get('type', '%')
                         promo_value = promo.get('value', 0)
-                    
-                    # Validation: S'assurer que value est un nombre valide
-                    if promo_value is None:
-                        promo_value = 0
-                    promo_value = float(promo_value)
-                    
-                    # Construire la description SANS le code réel
-                    # Le placeholder [CODE_APPLIQUÉ_AU_PANIER] est la SEULE chose visible
-                    if promo_type == '100%':
-                        context += "  • Remise 100% disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
-                    elif promo_type == '%':
-                        context += "  • Remise de " + str(promo_value) + "% disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
-                    elif promo_type == 'CHF':
-                        context += "  • Remise de " + str(promo_value) + " CHF disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
-                    else:
-                        # Type inconnu: afficher quand même sans révéler le code
-                        context += "  • Promotion disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
-                    promos_injected += 1
-                except Exception as promo_error:
-                    # Log l'erreur mais continue avec les autres promos
-                    logger.warning(f"[CHAT-IA] ⚠️ Promo ignorée (erreur parsing): {promo_error}")
-                    continue
-            
-            if promos_injected > 0:
-                context += "  → Tu peux calculer les prix réduits avec ces remises.\n"
-                context += "  → Ne dis JAMAIS le code. Dis simplement: 'Le code est appliqué automatiquement au panier.'\n"
-                logger.info(f"[CHAT-IA] ✅ {promos_injected} promos injectées (codes masqués)")
+                        
+                        # Validation: S'assurer que value est un nombre valide
+                        if promo_value is None:
+                            promo_value = 0
+                        promo_value = float(promo_value)
+                        
+                        # Construire la description SANS le code réel
+                        # Le placeholder [CODE_APPLIQUÉ_AU_PANIER] est la SEULE chose visible
+                        if promo_type == '100%':
+                            context += "  • Remise 100% disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
+                        elif promo_type == '%':
+                            context += "  • Remise de " + str(promo_value) + "% disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
+                        elif promo_type == 'CHF':
+                            context += "  • Remise de " + str(promo_value) + " CHF disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
+                        else:
+                            # Type inconnu: afficher quand même sans révéler le code
+                            context += "  • Promotion disponible (code: [CODE_APPLIQUÉ_AU_PANIER])\n"
+                        promos_injected += 1
+                    except Exception as promo_error:
+                        # Log l'erreur mais continue avec les autres promos
+                        logger.warning(f"[CHAT-IA] ⚠️ Promo ignorée (erreur parsing): {promo_error}")
+                        continue
+                
+                if promos_injected > 0:
+                    context += "  → Tu peux calculer les prix réduits avec ces remises.\n"
+                    context += "  → Ne dis JAMAIS le code. Dis simplement: 'Le code est appliqué automatiquement au panier.'\n"
+                    logger.info(f"[CHAT-IA] ✅ {promos_injected} promos injectées (codes masqués)")
         except Exception as e:
             logger.warning(f"[CHAT-IA] Erreur récupération promos (non bloquant): {e}")
         
