@@ -3409,15 +3409,27 @@ async def generate_shareable_link(request: Request):
     """
     Génère un lien partageable unique pour le chat IA.
     Ce lien peut être partagé sur les réseaux sociaux.
+    
+    Body optionnel:
+    {
+        "title": "Titre du lien",
+        "custom_prompt": "Prompt spécifique (nullable, prioritaire sur campaignPrompt)"
+    }
     """
     body = await request.json()
     title = body.get("title", "Chat Afroboost")
+    custom_prompt = body.get("custom_prompt")  # Nullable - si vide/null, sera None
+    
+    # Normaliser: si chaîne vide ou whitespace only, mettre à None
+    if custom_prompt and isinstance(custom_prompt, str):
+        custom_prompt = custom_prompt.strip() if custom_prompt.strip() else None
     
     # Créer une nouvelle session avec un token unique
     session = ChatSession(
         mode="ai",
         is_ai_active=True,
-        title=title
+        title=title,
+        custom_prompt=custom_prompt
     )
     await db.chat_sessions.insert_one(session.model_dump())
     
@@ -3426,10 +3438,13 @@ async def generate_shareable_link(request: Request):
     frontend_url = os.environ.get("FRONTEND_URL", "")
     share_url = f"{frontend_url}/chat/{session.link_token}" if frontend_url else f"/chat/{session.link_token}"
     
+    logger.info(f"[CHAT-LINK] Lien créé: {session.link_token} (custom_prompt: {'oui' if custom_prompt else 'non'})")
+    
     return {
         "link_token": session.link_token,
         "share_url": share_url,
-        "session_id": session.id
+        "session_id": session.id,
+        "has_custom_prompt": custom_prompt is not None
     }
 
 @api_router.get("/chat/links")
