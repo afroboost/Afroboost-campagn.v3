@@ -3985,31 +3985,49 @@ Si la question ne concerne pas un produit ou un cours Afroboost, réponds:
 💳 PAIEMENT: Oriente vers le coach WhatsApp ou email pour finaliser.
 """
 
-    # --- 3. CAMPAIGN_PROMPT : Récupéré de la base de données ---
-    CAMPAIGN_PROMPT = ai_config.get("campaignPrompt", "").strip()
+    # --- 3. PROMPT PRIORITAIRE : custom_prompt du lien > campaignPrompt global ---
+    # HIÉRARCHIE DE PRIORITÉ:
+    # 1. custom_prompt (du lien spécifique) - Si défini, IGNORE campaignPrompt
+    # 2. campaignPrompt (global de la campagne) - Utilisé si custom_prompt est vide/null
+    # 3. Aucun prompt supplémentaire - Comportement par défaut
+    
+    FINAL_PROMPT = ""
+    prompt_source = "none"
+    
+    # Vérifier si la session a un custom_prompt
+    session_custom_prompt = session.get("custom_prompt") if session else None
+    if session_custom_prompt and isinstance(session_custom_prompt, str) and session_custom_prompt.strip():
+        FINAL_PROMPT = session_custom_prompt.strip()
+        prompt_source = "custom_prompt (lien)"
+        logger.info("[CHAT-AI-RESPONSE] ✅ Utilisation du custom_prompt du lien")
+    else:
+        # Fallback sur campaignPrompt global
+        FINAL_PROMPT = ai_config.get("campaignPrompt", "").strip()
+        if FINAL_PROMPT:
+            prompt_source = "campaignPrompt (global)"
     
     # GARDE-FOU: Limite à 2000 caractères pour éviter de saturer le contexte OpenAI
     MAX_CAMPAIGN_LENGTH = 2000
-    if len(CAMPAIGN_PROMPT) > MAX_CAMPAIGN_LENGTH:
-        logger.warning("[CHAT-AI-RESPONSE] ⚠️ CAMPAIGN_PROMPT tronqué (dépassement " + str(MAX_CAMPAIGN_LENGTH) + " chars)")
-        CAMPAIGN_PROMPT = CAMPAIGN_PROMPT[:MAX_CAMPAIGN_LENGTH] + "... [TRONQUÉ]"
+    if len(FINAL_PROMPT) > MAX_CAMPAIGN_LENGTH:
+        logger.warning("[CHAT-AI-RESPONSE] ⚠️ PROMPT tronqué (dépassement " + str(MAX_CAMPAIGN_LENGTH) + " chars)")
+        FINAL_PROMPT = FINAL_PROMPT[:MAX_CAMPAIGN_LENGTH] + "... [TRONQUÉ]"
     
-    # --- INJECTION FINALE : BASE + SECURITY + CAMPAIGN ---
+    # --- INJECTION FINALE : BASE + SECURITY + PROMPT PRIORITAIRE ---
     context += BASE_PROMPT
     context += SECURITY_PROMPT
     
-    if CAMPAIGN_PROMPT:
+    if FINAL_PROMPT:
         # PRODUCTION-READY: Concaténation sécurisée (pas de f-string)
         context += "\n\n--- INSTRUCTIONS PRIORITAIRES DE LA CAMPAGNE ACTUELLE (ÉCRASE TOUT LE RESTE) ---\n"
         context += "╔══════════════════════════════════════════════════════════════════╗\n"
-        context += "║   🚨 CAMPAIGN_PROMPT - PRIORITÉ ABSOLUE (ÉCRASE TOUT LE RESTE)   ║\n"
+        context += "║   🚨 PROMPT PRIORITAIRE - PRIORITÉ ABSOLUE (ÉCRASE TOUT LE RESTE)   ║\n"
         context += "╚══════════════════════════════════════════════════════════════════╝\n\n"
-        context += CAMPAIGN_PROMPT
+        context += FINAL_PROMPT
         context += "\n\n╔══════════════════════════════════════════════════════════════════╗\n"
         context += "║              FIN DES INSTRUCTIONS PRIORITAIRES                   ║\n"
         context += "╚══════════════════════════════════════════════════════════════════╝\n"
-        # LOG SÉCURISÉ: Uniquement la longueur, pas le contenu
-        logger.info("[CHAT-AI-RESPONSE] ✅ Prompt injecté (len: " + str(len(CAMPAIGN_PROMPT)) + ")")
+        # LOG SÉCURISÉ: Uniquement la source et la longueur, pas le contenu
+        logger.info("[CHAT-AI-RESPONSE] ✅ Prompt injecté (source: " + prompt_source + ", len: " + str(len(FINAL_PROMPT)) + ")")
     
     # Assemblage final du prompt système
     full_system_prompt = ai_config.get("systemPrompt", "Tu es l'assistant IA d'Afroboost.") + context
