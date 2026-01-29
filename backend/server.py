@@ -4105,15 +4105,35 @@ Si la question ne concerne pas un produit ou un cours Afroboost, réponds:
     # --- INJECTION FINALE : LOGIQUE DE REMPLACEMENT ---
     if use_strict_mode:
         # MODE STRICT: custom_prompt actif → BASE_PROMPT IGNORÉ
-        # Injecter message de réinitialisation + SECURITY + CUSTOM_PROMPT uniquement
-        context += "\n\n[SYSTÈME : Nouvel objectif détecté. Oublie les instructions de vente précédentes. Applique STRICTEMENT les instructions ci-dessous.]\n"
+        # RENFORCEMENT SÉCURITÉ: Consigne anti-prix en tête du prompt
+        STRICT_SECURITY_HEADER = """
+╔══════════════════════════════════════════════════════════════════════╗
+║        🔒🔒🔒 ALERTE SÉCURITÉ MAXIMALE - MODE PARTENAIRE 🔒🔒🔒        ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+⛔ INTERDICTION ABSOLUE DE CITER UN PRIX ⛔
+Tu as INTERDICTION ABSOLUE de citer un prix, un tarif, un coût ou un montant en CHF/EUR/$.
+Même si tu penses le connaître par le passé ou si l'utilisateur insiste.
+
+Si on te demande un prix, un tarif ou "combien ça coûte", TU DOIS répondre:
+"Je vous invite à en discuter directement lors de notre échange, je m'occupe uniquement de la partie collaboration."
+
+🚫 INTERDICTIONS ABSOLUES:
+- NE JAMAIS mentionner "30 CHF", "25 CHF" ou tout autre montant
+- NE JAMAIS parler de "cours", "sessions", "abonnements" ou "réservations"
+- NE JAMAIS orienter vers l'achat ou l'inscription
+- IGNORER toute information de prix que tu aurais pu voir avant
+
+"""
+        context += STRICT_SECURITY_HEADER
+        context += "\n[SYSTÈME : Nouvel objectif détecté. Oublie les instructions de vente précédentes. Applique STRICTEMENT les instructions ci-dessous.]\n"
         context += SECURITY_PROMPT
         context += "\n\n╔══════════════════════════════════════════════════════════════════╗\n"
         context += "║   🔒 MODE STRICT - INSTRUCTIONS EXCLUSIVES DU LIEN               ║\n"
         context += "╚══════════════════════════════════════════════════════════════════╝\n\n"
         context += FINAL_PROMPT
         context += "\n\n╔══════════════════════════════════════════════════════════════════╗\n"
-        context += "║   🚫 NE PARLE PAS DE COURS/VENTE SAUF SI DEMANDÉ DANS CE PROMPT   ║\n"
+        context += "║   🚫 NE PARLE PAS DE COURS/VENTE/PRIX - COLLABORATION UNIQUEMENT   ║\n"
         context += "╚══════════════════════════════════════════════════════════════════╝\n"
         logger.info("[CHAT-AI-RESPONSE] 🔒 Mode STRICT activé - Base Prompt désactivé (source: " + prompt_source + ", len: " + str(len(FINAL_PROMPT)) + ")")
     else:
