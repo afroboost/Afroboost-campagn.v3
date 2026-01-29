@@ -2889,42 +2889,15 @@ Si la question ne concerne pas un produit ou un cours Afroboost, réponds:
 💳 PAIEMENT: Oriente vers le coach WhatsApp ou email pour finaliser.
 """
 
-    # --- 3. PROMPT PAR LIEN : LOGIQUE DE REMPLACEMENT (NON-CONCATÉNATION) ---
-    # RÈGLE CRITIQUE:
-    # - SI custom_prompt existe → IGNORER BASE_PROMPT, utiliser UNIQUEMENT SECURITY + CUSTOM
-    # - SINON → Utiliser BASE_PROMPT + CAMPAIGN_PROMPT (flux habituel)
+    # --- 3. PROMPT PAR LIEN : UTILISATION DU MODE DÉJÀ DÉTECTÉ ---
+    # La variable use_strict_mode a été définie en amont (section 2.5)
+    # Pas de re-détection, on utilise directement CUSTOM_PROMPT et use_strict_mode
     
-    FINAL_PROMPT = ""
-    prompt_source = "none"
-    use_strict_mode = False  # Mode strict = custom_prompt actif, BASE_PROMPT désactivé
+    FINAL_PROMPT = CUSTOM_PROMPT if use_strict_mode else ""
+    prompt_source = "custom_prompt (lien)" if use_strict_mode else "none"
     
-    # Vérifier si on a un link_token (direct ou dans source)
-    link_token = data.link_token.strip() if data.link_token else ""
-    if not link_token and data.source and data.source.startswith("link_"):
-        link_token = data.source.replace("link_", "")
-    
-    # Récupérer la session associée au lien (si existe)
-    session_with_prompt = None
-    if link_token:
-        try:
-            session_with_prompt = await db.chat_sessions.find_one(
-                {"link_token": link_token, "is_deleted": {"$ne": True}},
-                {"_id": 0, "custom_prompt": 1}
-            )
-        except Exception as e:
-            logger.warning(f"[CHAT-IA] Erreur récupération session pour link_token {link_token}: {e}")
-    
-    # Déterminer le mode : STRICT (custom_prompt) ou STANDARD (campaignPrompt)
-    if session_with_prompt and session_with_prompt.get("custom_prompt"):
-        custom_prompt = session_with_prompt.get("custom_prompt", "").strip()
-        if custom_prompt:
-            FINAL_PROMPT = custom_prompt
-            prompt_source = "custom_prompt (lien)"
-            use_strict_mode = True  # ACTIVER MODE STRICT
-            logger.info(f"[CHAT-IA] 🔒 Mode STRICT : Prompt de lien activé, Base Prompt DÉSACTIVÉ")
-    
-    # Fallback sur campaignPrompt global (mode standard)
-    if not FINAL_PROMPT:
+    # Fallback sur campaignPrompt global (uniquement en mode STANDARD)
+    if not FINAL_PROMPT and not use_strict_mode:
         FINAL_PROMPT = ai_config.get("campaignPrompt", "").strip()
         if FINAL_PROMPT:
             prompt_source = "campaignPrompt (global)"
